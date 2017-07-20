@@ -1,6 +1,6 @@
 # OpenAI Gym RL algorithm implementation
 
-The main goal is to train self driving cars to drive by them selves but while learning to do that I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
+The main goal is to train self driving cars to learn to drive by themselves but while learning to do that I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
 
 ## Dependecies
 
