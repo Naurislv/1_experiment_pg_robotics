@@ -1,0 +1,6 @@
+# Ignore following files/directories even if they are in subdirectories
+
+__pycache__/
+.ipynb_checkpoints/
+.directory
+save_im/
