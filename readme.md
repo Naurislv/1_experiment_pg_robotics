@@ -1,11 +1,14 @@
 # OpenAI Gym RL algorithm implementation
 
+The main goal is to train self driving cars to drive by them selves but while learning to do that I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
+
 ## Dependecies
 
 * pip install gym
 * pip install imageio
 * sudo apt-get install swig
 * pip install box2d
+* pip install gym[atari]
 
 ## Extra Reasearch [2017.18.07]
 
