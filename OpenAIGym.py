@@ -45,8 +45,8 @@ import logging
 # Local imports
 # For each worker there is seperate AC3Network therefore scopes / names of
 # networks has to be handled correctly
-from SimpleClassificator import SimpleNet
-from Utils import save_im
+from SamplePolicyGradNet import SampleNet
+# from Utils import save_im
 
 # Other imports
 import gym
@@ -67,13 +67,12 @@ _FLAGS.DEFINE_boolean('video_small', False, "Whether to record and save video or
 _FLAGS.DEFINE_boolean('video_big', False, "Whether to record and save video or not. Gym built "
                                           "in command. Also create report .json files. Boolean.")
 _FLAGS.DEFINE_boolean('render', True, "Whether to render video for visual or not.")
+_FLAGS.DEFINE_boolean('gpu', False, "Use GPU.")
 
 class GymEnv(object):
     """OpenAI Gym Virtual Environment - setup."""
 
     def __init__(self, env_name, policy_net):
-
-        self.gamma = 0.99 # discount factor for reward
 
         # Create gym environment for CarRacing-v0
         self.env = gym.make(env_name)
@@ -96,26 +95,53 @@ class GymEnv(object):
 
         # Observation sapce shape after preprocessing
         os_sample_shape = self.prepro(self.env.observation_space.sample(), None)[0].shape
+        LOGGER.info("Observation sample shape after preprocess: %s", os_sample_shape)
         # Policy network - responsilbe for sampled actions
-        os_sample_shape = (os_sample_shape[1], os_sample_shape[2], os_sample_shape[3])
-        self.policy_net = policy_net(os_sample_shape)
+        if FLAGS.gpu:
+            device = '/gpu:0'
+        else:
+            device = '/cpu:0'
 
-    def run(self):
+        with tf.device(device):
+            self.policy_net = policy_net(list(os_sample_shape))
+            self.policy_net.build('PolicyGradient')
+
+    def run(self, chk_path_load='', chk_path_save='model'):
+        """Start loop."""
+
+        try:
+            self.policy_net.load(chk_path_load)
+        except Exception as e:
+            self.policy_net.init_weights()
+
+        try:
+            self._run()
+        except KeyboardInterrupt:
+            self.policy_net.save(chk_path_save)
+
+    def _run(self):
         """Run virtual environment loop."""
 
         # 1 episode is multiple games (until game env responde with done == True)
         episode_number = 0
-        n_frames = 0  # frames per episode
+        n_frames = 1  # frames per episode
         prev_img = None  # Previous image
 
         reward_sum = 0
+        batch_size = 10
 
         # Used for training after episode
         reward_his = []  # save rewards
-        labels_his = []  # save labels
+        action_his = []  # action history
         obs_his = []  # save eposiodes
 
+        reward_his_batch = []
+        action_hist_batch = []
+        obs_his_batch = []
+
         observation = self.env.reset()
+
+        start_time = time.time()
 
         while True:
             if FLAGS.render:
@@ -123,22 +149,15 @@ class GymEnv(object):
 
             # preprocess the observation, set input to network to be difference image
             policy_input, prev_img = self.prepro(observation, prev_img)
-
-            # save_im('save_im/{}.jpg'.format(counter), policy_input)
-
-            policy_output = self.policy_net.predict(policy_input)
-
-            action_prob = policy_output[0][0]
-
-            # Generate proper action for game env based on neural network output probability
-            # and give a chance to do random move
-            action = 2 if np.random.uniform() < action_prob else 3  # roll the dice!
-
             obs_his.append(policy_input)
 
-            # Basically generate label for neural network. Binary label 0 or 1 for classification.
-            label = 1 if action == 2 else 0  # a "fake label"
-            labels_his.append(label)
+            # save_im('save_im/{}.jpg'.format(counter), policy_input)
+            policy_input = np.expand_dims(policy_input, axis=0)
+            action_idx = self.policy_net.predict(policy_input)[0][0]
+
+            action_dict = {0: 2, 1: 3}
+            action = action_dict[action_idx]
+            action_his.append(action_idx)
 
             # step the environment and get new measurements
             observation, reward, done, _ = self.env.step(action)
@@ -147,17 +166,20 @@ class GymEnv(object):
             # record reward (has to be done after we call step() to get reward for previous action)
             reward_his.append(reward)
 
-            if n_frames % 40 == 0:
-                LOGGER.debug("Every 40th frame. Episode: %s. Obs shape: %s Reward Sum: %s,"
-                             "Policy: %s, Action: %s, Done: %s", episode_number,
-                             observation.shape, reward_sum, policy_output, action, done)
+            if n_frames % 50 == 0:
+                end_time = time.time()
+
+                fps = 50 / (end_time - start_time)
+                LOGGER.debug("%s. FPS: %.2f, Reward Sum: %s",
+                             episode_number, fps, reward_sum)
+                start_time = time.time()
 
             if FLAGS.video_small:
                 self.writer.append_data(observation)
 
             n_frames += 1
 
-            if done:  # When Game env say it's done - it's done!
+            if done:  # When Game env say it's done - end of episode.
                 episode_number += 1
 
                 logging.info("Done!")
@@ -172,32 +194,80 @@ class GymEnv(object):
                 discounted_reward -= np.mean(discounted_reward)
                 discounted_reward /= np.std(discounted_reward)
 
+                # advantages = [len(reward_his)] * len(reward_his)
+
+                reward_his_batch.extend(discounted_reward)
+                action_hist_batch.extend(action_his)
+                obs_his_batch.extend(obs_his)
+
+                # Reset history
+                reward_his = []  # save rewards
+                action_his = []  # action history
+                obs_his = []  # save eposiodes
+
+                n_frames = 1
+
+                if episode_number % batch_size == 0:
+                    LOGGER.info("Update weights!")
+
+                    # update policy
+                    # normalize rewards; don't divide by 0
+                    reward_his_batch = ((reward_his_batch - np.mean(reward_his_batch)) /
+                                        (np.std(reward_his_batch) + 1e-10))
+
+                    self.policy_net.fit(obs_his_batch, action_hist_batch, reward_his_batch)
+
+                    reward_his_batch = []
+                    action_hist_batch = []
+                    obs_his_batch = []
+
+                start_time = time.time()
+
     def prepro(self, img, prev_img):
         """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
-        # img = img[0:83] # crop
+
+        img = img[35:195] # crop
+        img = img[::2, ::2, 0] # downsample by factor of 2
+        img[img == 144] = 0 # erase background (background type 1)
+        img[img == 109] = 0 # erase background (background type 2)
+        img[img != 0] = 1 # everything else (paddles, ball) just set to 1
+
+        img = img.astype(np.float)
+        img = img.reshape((img.shape[0], img.shape[1], 1))
 
         policy_input = img - prev_img if prev_img is not None else np.zeros(img.shape)
         prev_img = img
 
-        policy_input = np.expand_dims(policy_input, axis=0)
-
         return policy_input, prev_img
 
-    def discount_rewards(self, reward_his):
-        """ take 1D float array of rewards and compute discounted reward """
+    def discount_rewards(self, reward_his, gamma=0.99):
+        """Returns discounted rewards
+        Args:
+            reward_his (1-D array): a list of `reward` at each time step
+            gamma (float): Will discount the future value by this rate
+        Returns:
+            discounted_r (1-D array): same shape as input `R`
+                but the values are discounted
+        Examples:
+            >>> R = [1, 1, 1]
+            >>> discount_rewards(R, .99) # before normalization
+            [1 + 0.99 + 0.99**2, 1 + 0.99, 1]
+        """
+
         discounted_r = np.zeros_like(reward_his)
         running_add = 0
         for i in reversed(range(0, reward_his.size)):
             # reset the sum, since this was a game boundary (pong specific!)
             if reward_his[i] != 0:
                 running_add = 0
-            running_add = running_add * self.gamma + reward_his[i]
+            running_add = running_add * gamma + reward_his[i]
             discounted_r[i] = running_add
 
         return discounted_r
 
 if __name__ == "__main__":
 
-    ENV = GymEnv('Pong-v0', SimpleNet)
+    ENV = GymEnv('Pong-v0', SampleNet)
 
-    ENV.run()
+    ENV.run(chk_path_load='/home/nauris/Dropbox/coding/openai_gym/models/model_1500995521623',
+            chk_path_save='/home/nauris/Dropbox/coding/openai_gym/models/model')
