@@ -41,11 +41,12 @@ Insipred from :
 # Standard imports
 import time
 import logging
+import os
 
 # Local imports
 # For each worker there is seperate AC3Network therefore scopes / names of
 # networks has to be handled correctly
-from SamplePolicyGradNet import SampleNet
+from Policy import SampleNet
 # from Utils import save_im
 
 # Other imports
@@ -54,6 +55,9 @@ from gym import wrappers
 import imageio
 import tensorflow as tf
 import numpy as np
+
+# Disable TF ERROR messages (Also all other messages). Reason: CUDA_ERROR_OUT_OF_MEMORY
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 # Get gym logger
 LOGGER = logging.getLogger()
@@ -74,6 +78,8 @@ class GymEnv(object):
 
     def __init__(self, env_name, policy_net):
 
+        self.data_type = {'tf': tf.float32, 'np': np.float32}
+
         # Create gym environment for CarRacing-v0
         self.env = gym.make(env_name)
         LOGGER.info("%s initialized", env_name)
@@ -85,7 +91,9 @@ class GymEnv(object):
         if FLAGS.video_small:
             self.writer = imageio.get_writer('{}.mp4'.format(env_name), mode='I')
 
-        LOGGER.info('Action Space %s', self.env.action_space)
+        self.n_actions = self.env.action_space.n
+        LOGGER.info('Action Space %s total of %d actions',
+                    self.env.action_space, self.n_actions)
         LOGGER.info([func for func in dir(self.env.action_space) if '__' not in func])
         LOGGER.info('Observation Space %s', self.env.observation_space)
         LOGGER.info([func for func in dir(self.env.observation_space) if '__' not in func])
@@ -103,7 +111,9 @@ class GymEnv(object):
             device = '/cpu:0'
 
         with tf.device(device):
-            self.policy_net = policy_net(list(os_sample_shape))
+            self.policy_net = policy_net(list(os_sample_shape),
+                                         self.data_type,
+                                         self.n_actions)
             self.policy_net.build('PolicyGradient')
 
     def run(self, chk_path_load='', chk_path_save='model'):
@@ -123,7 +133,7 @@ class GymEnv(object):
         """Run virtual environment loop."""
 
         # 1 episode is multiple games (until game env responde with done == True)
-        episode_number = 0
+        episode_number = 1
         n_frames = 1  # frames per episode
         prev_img = None  # Previous image
 
@@ -135,13 +145,12 @@ class GymEnv(object):
         action_his = []  # action history
         obs_his = []  # save eposiodes
 
-        reward_his_batch = []
-        action_hist_batch = []
-        obs_his_batch = []
-
         observation = self.env.reset()
 
         start_time = time.time()
+        train_time = start_time
+
+        lives = None
 
         while True:
             if FLAGS.render:
@@ -149,29 +158,37 @@ class GymEnv(object):
 
             # preprocess the observation, set input to network to be difference image
             policy_input, prev_img = self.prepro(observation, prev_img)
-            obs_his.append(policy_input)
 
-            # save_im('save_im/{}.jpg'.format(counter), policy_input)
-            policy_input = np.expand_dims(policy_input, axis=0)
-            action_idx = self.policy_net.predict(policy_input)[0][0]
+            # save_im('save_im/{}.jpg'.format(n_frames),
+            #         np.concatenate((prev_img, policy_input), axis=1))
 
-            action_dict = {0: 2, 1: 3}
-            action = action_dict[action_idx]
-            action_his.append(action_idx)
+            policy_input_expand = np.expand_dims(policy_input, axis=0)
+            action_idx = self.policy_net.predict(policy_input_expand)[0, :]
+
+            label = np.zeros((self.n_actions), dtype=self.data_type['np'])
+            label[action_idx] = 1
 
             # step the environment and get new measurements
-            observation, reward, done, _ = self.env.step(action)
+            observation, reward, done, info = self.env.step(action_idx)
             reward_sum += reward
 
+            if lives is None:
+                lives = info['ale.lives']
+            if info['ale.lives'] < lives:
+                done = True # End game when loose first live
+                LOGGER.info("End game because lost first live.")
+
             # record reward (has to be done after we call step() to get reward for previous action)
+            obs_his.append(policy_input)
+            action_his.append(label)
             reward_his.append(reward)
 
             if n_frames % 50 == 0:
                 end_time = time.time()
 
                 fps = 50 / (end_time - start_time)
-                LOGGER.debug("%s. FPS: %.2f, Reward Sum: %s",
-                             episode_number, fps, reward_sum)
+                LOGGER.debug("%s. [%.2fs] FPS: %.2f, Reward Sum: %s",
+                             episode_number, end_time - train_time, fps, reward_sum)
                 start_time = time.time()
 
             if FLAGS.video_small:
@@ -180,62 +197,54 @@ class GymEnv(object):
             n_frames += 1
 
             if done:  # When Game env say it's done - end of episode.
-                episode_number += 1
-
-                logging.info("Done!")
-                observation = self.env.reset()  # reset env
-                reward_sum = 0
-                prev_img = None
-
-                # compute the discounted reward backwards through time
-                discounted_reward = self.discount_rewards(np.vstack(reward_his))
-                # standardize the rewards to be unit normal
-                # (helps control the gradient estimator variance)
-                discounted_reward -= np.mean(discounted_reward)
-                discounted_reward /= np.std(discounted_reward)
-
-                # advantages = [len(reward_his)] * len(reward_his)
-
-                reward_his_batch.extend(discounted_reward)
-                action_hist_batch.extend(action_his)
-                obs_his_batch.extend(obs_his)
-
-                # Reset history
-                reward_his = []  # save rewards
-                action_his = []  # action history
-                obs_his = []  # save eposiodes
+                LOGGER.info('')
+                LOGGER.info("Episode done! Reward sum: %.2f , Frames: %d",
+                            reward_sum, n_frames)
+                LOGGER.info('')
 
                 n_frames = 1
 
                 if episode_number % batch_size == 0:
-                    LOGGER.info("Update weights!")
+                    LOGGER.info("Update weights from %d frames with average score: %s",
+                                len(reward_his), sum(reward_his) / batch_size)
 
-                    # update policy
-                    # normalize rewards; don't divide by 0
-                    reward_his_batch = ((reward_his_batch - np.mean(reward_his_batch)) /
-                                        (np.std(reward_his_batch) + 1e-10))
+                    # compute the discounted reward backwards through time
+                    discounted_reward = self.discount_rewards(np.array(reward_his))
+                    # standardize the rewards to be unit normal
+                    # (helps control the gradient estimator variance)
+                    discounted_reward -= np.mean(discounted_reward)
+                    tmp = np.std(discounted_reward)
+                    if tmp > 0:
+                        discounted_reward /= tmp  # fix zero-divide
 
-                    self.policy_net.fit(obs_his_batch, action_hist_batch, reward_his_batch)
+                    self.policy_net.fit(np.array(obs_his),
+                                        np.vstack(action_his),
+                                        np.vstack(discounted_reward))
 
-                    reward_his_batch = []
-                    action_hist_batch = []
-                    obs_his_batch = []
+                    # Reset history
+                    reward_his = []  # save rewards
+                    action_his = []  # action history
+                    obs_his = []  # save eposiodes
 
+                observation = self.env.reset()  # reset env
+                reward_sum = 0
+                lives = None
+                prev_img = None
+                episode_number += 1
                 start_time = time.time()
 
     def prepro(self, img, prev_img):
         """ prepro 210x160x3 uint8 frame into 6400 (80x80) 1D float vector """
-
-        img = img[35:195] # crop
         img = img[::2, ::2, 0] # downsample by factor of 2
-        img[img == 144] = 0 # erase background (background type 1)
-        img[img == 109] = 0 # erase background (background type 2)
-        img[img != 0] = 1 # everything else (paddles, ball) just set to 1
+        img = img[17:97, :]
 
-        img = img.astype(np.float)
-        img = img.reshape((img.shape[0], img.shape[1], 1))
+        img = img.astype(self.data_type['np'])
 
-        policy_input = img - prev_img if prev_img is not None else np.zeros(img.shape)
+        if prev_img is not None:
+            policy_input = img - prev_img
+        else:
+            policy_input = np.zeros_like(img)
+
         prev_img = img
 
         return policy_input, prev_img
@@ -267,7 +276,7 @@ class GymEnv(object):
 
 if __name__ == "__main__":
 
-    ENV = GymEnv('Pong-v0', SampleNet)
+    ENV = GymEnv('Pong-v4', SampleNet)
 
-    ENV.run(chk_path_load='/home/nauris/Dropbox/coding/openai_gym/models/model_1500995521623',
+    ENV.run(chk_path_load='/home/nauris/Dropbox/coding/openai_gym/models/model_1501094533767',
             chk_path_save='/home/nauris/Dropbox/coding/openai_gym/models/model')
