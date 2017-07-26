@@ -5,3 +5,6 @@ __pycache__/
 .directory
 save_im/
 models/
+
+# Ignore all files with prefix __ - those are testing, temporary files
+__*
