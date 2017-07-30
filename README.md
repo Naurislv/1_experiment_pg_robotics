@@ -2,6 +2,8 @@
 
 The main goal is to train self driving cars to learn to drive by themselves but while learning to do so I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
 
+Currently only Pong is tested and works. Any other OpenAI Gym Atari game with discrete action space also should work.
+
 [//]: # (Image References)
 
 [image1]: ./Images/atari_game_performance.png "Atari game performance compare"
@@ -48,7 +50,7 @@ Sample output of training process
 [2017-07-30 14:23:55,945] 13271. [52366.35s] FPS: 937.53, Reward Sum: 0.0
 ```
 
-It is easy to switch between different Neural Network architectures because all of them return necesarry Tensorflow objects for Policy Gradient to use. Just comment current neural network import and uncomment other in [PolicyGradient.py](./PolicyGradien.py). For example we will use KarpathyNet.py network:
+It is easy to switch between different Neural Network architectures because all of them return necesarry Tensorflow objects for Policy Gradient to use. Just comment current neural network import and uncomment other in [PolicyGradient.py](./PolicyGradient.py). For example we will use KarpathyNet.py network:
 
 ```
 # from Nets import MaxoutNet as policy_net
