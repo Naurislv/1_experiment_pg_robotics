@@ -1,6 +1,10 @@
 # OpenAI Gym RL algorithm implementation
 
-The main goal is to train self driving cars to learn to drive by themselves but while learning to do that I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
+The main goal is to train self driving cars to learn to drive by themselves but while learning to do so I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
+
+[//]: # (Image References)
+
+[image1]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
 
 ## Dependecies
 
@@ -9,6 +13,22 @@ The main goal is to train self driving cars to learn to drive by themselves but 
 * sudo apt-get install swig
 * pip install box2d
 * pip install gym[atari]
+* pip install tensorflow
+* OpenCV (Compile or install through conda)
+
+## Issues
+
+* Current code does run faster on CPU (Intel(R) Core(TM) i7-6800K) than on GPU (GTX-1080) even though total CPU load is around 20% (While training 100%, thanks to TF multiprocessing). This may be because of latency between GPU and CPU.
+
+* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame.
+
+* Code need to be refactorize.
+
+## Pong-v4
+
+Start trainig: `python OpenAIGym.py`
+
+![alt text][image1]
 
 ## Extra Reasearch [2017.18.07]
 

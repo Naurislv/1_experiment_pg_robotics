@@ -6,21 +6,22 @@ Policy Gradient in TF:
 
 # Standard imports
 import logging
-import time
 
 # Other imports
 import tensorflow as tf
+import numpy as np
 # from MaxoutNet import maxout_cnn as policy_net
+# from GuntisNet import guntis_net as policy_net
 from KarpathyNet import karpathy_net as policy_net
 
-TF_CONFIG = tf.ConfigProto()
-TF_CONFIG.allow_soft_placement = True
-TF_CONFIG.gpu_options.allocator_type = 'BFC'  # pylint: disable=E1101
+# TF_CONFIG = tf.ConfigProto()
+# TF_CONFIG.allow_soft_placement = True
+# TF_CONFIG.gpu_options.allocator_type = 'BFC'  # pylint: disable=E1101
 # TF_CONFIG.gpu_options.per_process_gpu_memory_fraction = 0.8
-TF_CONFIG.gpu_options.allow_growth = True  # pylint: disable=E1101
+# TF_CONFIG.gpu_options.allow_growth = True  # pylint: disable=E1101
 # TF_CONFIG.log_device_placement = True
 
-class SampleNet(object):
+class Policy(object):
     """Three Dense layers"""
 
     def __init__(self, state_shape, data_type, n_actions):
@@ -32,18 +33,15 @@ class SampleNet(object):
         """
         self.rmsprop_decay = 0.99
         self.learning_rate = 1e-3
-
         self.state_shape = state_shape
 
-        self._sess = tf.Session(config=TF_CONFIG)
+        self._sess = tf.Session()
 
-        self.inputs = None
+        self.net = None
         self.actions = None
         self.advantages = None
         self.sample = None
-        self.action_prob = None
         self.loss = None
-        self.loss_sum = None
         self.train = None
 
         self.data_type = data_type
@@ -55,20 +53,18 @@ class SampleNet(object):
         with tf.variable_scope(scope):  # pylint: disable=E1129
             logging.info('Building Network in %s scope', scope)
 
-            net = policy_net(self.state_shape, self.data_type['tf'], self.n_actions)
+            self.net = policy_net(self.state_shape, self.data_type['tf'], self.n_actions)
 
-            self.inputs = net['inputs']
             self.actions = tf.placeholder(dtype=self.data_type['tf'], shape=[None, self.n_actions])
             self.advantages = tf.placeholder(dtype=self.data_type['tf'], shape=[None, 1])
 
             # Samples an action from multinomial distribution
-            self.sample = tf.transpose(tf.multinomial(net['logits'], 1))
-
-            self.action_prob = net['logits_softmax']
+            self.sample = tf.transpose(tf.multinomial(self.net['logits'], 1))
 
             # surrogate loss
-            self.loss = - self.advantages * self.actions * tf.log(self.action_prob + 0.0001)  # pylint: disable=E1130
-            self.loss_sum = tf.reduce_sum(self.loss)
+            self.loss = - tf.reduce_sum(self.advantages *  # pylint: disable=E1130
+                                        self.actions *
+                                        tf.log(self.net['logits_softmax'] + 0.0001))
 
             # update
             optimizer = tf.train.RMSPropOptimizer(
@@ -84,7 +80,7 @@ class SampleNet(object):
     def init_weights(self):
         """Initialize TF variables."""
 
-        logging.info('Initializing Network variables')
+        logging.info('Initializing network Random variables')
         # Add an op to initialize the variables.
         init_op = tf.global_variables_initializer()
         self._sess.run(init_op)
@@ -92,11 +88,11 @@ class SampleNet(object):
     def fit(self, obs, actions, advantages):
         """Train neural network."""
 
-        batch_feed = {self.inputs: obs,
+        batch_feed = {self.net['inputs']: obs,
                       self.actions: actions,
                       self.advantages: advantages}
 
-        _, loss = self._sess.run([self.train, self.loss_sum], feed_dict=batch_feed)
+        _, loss = self._sess.run([self.train, self.loss], feed_dict=batch_feed)
         logging.info("Loss sum: %s", loss)
 
     def predict(self, observation):
@@ -104,13 +100,14 @@ class SampleNet(object):
 
         Return index of action.
         """
-        return self._sess.run(self.sample, feed_dict={self.inputs: observation})
+
+        observation = np.expand_dims(observation, axis=0)
+        return self._sess.run(self.sample, feed_dict={self.net['inputs']: observation})
 
     def save(self, path):
         """Save Tesnroflow checkpoint."""
         saver = tf.train.Saver()
 
-        path = path + '_' + str(int(round(time.time() * 1000)))
         saver.save(self._sess, path)
         logging.info('Checkpoint saved %s', path)
 
