@@ -8,6 +8,7 @@ Currently only Pong is tested and works. Any other OpenAI Gym Atari game with di
 
 [image1]: ./Images/atari_game_performance.png "Atari game performance compare"
 [image2]: ./Images/pong_pg_results.png "Pong Policy Gradient Results"
+[image3]: ./Images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
 
 ## Dependecies
 
@@ -64,9 +65,13 @@ Plots are generated using [this code](./PlayGround.ipynb).
 
 ## Pong-v4 with Policy Gradient
 
-Testing results using [1 hidden layer fully connected network](./Nets/KarpathyNet.py) as policy Network.
+### Policy NN : [1 hidden layer fully connected network](./Nets/KarpathyNet.py)
 
-Note that for this Test - specific Pong image preprocessing were used :
+I trained this network for ~18k Episodes for each test because it is very time consuming - around 17h.
+
+#### 1. Test
+
+For this Test specific Pong image preprocessing were used to converge faster :
 
 ```
 img[img == 17] = 0 # erase background (background type 1)
@@ -77,7 +82,7 @@ img[img != 0] = 1 # everything else (paddles, ball) just set to 1
 img = img[17:96, :]
 ```
 
-In future this and similar preprocessing will be replaced/remove so this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high.
+In future this and similar preprocessing will be replaced/removed so this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high. See 2. Test.
 
 Hyperparameters:
 
@@ -86,6 +91,18 @@ Hyperparameters:
 * Batch size (number of episodes) = 10
 
 ![alt text][image2]
+
+#### 2. Test
+
+Without preprocessing (without removing background and binarization). We can see that learning is much slower however there is no sign that it won't converge to same level as in 1. Test eventually.
+
+Hyperparameters:
+
+* RMSPropOptimizer(learning_rate=0.001, decay=0.99)
+* Discounted Rewards gamma = 0.99
+* Batch size (number of episodes) = 10
+
+![alt text][image3]
 
 ## Extra Reasearch [2017.18.07]
 
