@@ -49,6 +49,8 @@ Sample output of training process
 
 # OpenAI Gym test results
 
+Plots are generated using [this code](./PlayGround.ipynb).
+
 ## Pong-v4 with Policy Gradient
 
 Testing results using [1 hidden layer fully connected network](./KarpathyNet.py) as policy Network.
