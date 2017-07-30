@@ -8,7 +8,7 @@ import tensorflow as tf
 import tensorflow.contrib.slim as slim  # pylint: disable=E0611
 
 
-def karpathy_net(input_shape, dtype, classes):
+def build(input_shape, dtype, classes):
     """Maxout CNN Network.
 
     Input :
@@ -28,12 +28,31 @@ def karpathy_net(input_shape, dtype, classes):
 
     logging.debug('inputs %s', inputs.get_shape().as_list())
 
-    net = slim.fully_connected(
-        slim.flatten(inputs),
-        50,
-        # activation_fn=_tf_selu,
+    net = slim.conv2d(
+        inputs=inputs,
+        num_outputs=16,
+        kernel_size=[8, 8],
+        stride=[4, 4],
+        padding='VALID',
         activation_fn=tf.nn.relu,
-        weights_initializer=tf.contrib.layers.xavier_initializer(uniform=True, seed=1)
+        weights_initializer=tf.truncated_normal_initializer(mean=0, stddev=0.01)
+    )
+
+    net = slim.conv2d(
+        inputs=net,
+        num_outputs=32,
+        kernel_size=[4, 4],
+        stride=[2, 2],
+        padding='VALID',
+        activation_fn=tf.nn.relu,
+        weights_initializer=tf.truncated_normal_initializer(mean=0, stddev=0.01)
+    )
+
+    net = slim.fully_connected(
+        slim.flatten(net),
+        256,
+        activation_fn=tf.nn.relu,
+        weights_initializer=tf.truncated_normal_initializer(mean=0, stddev=0.01)
     )
 
     # Output layers for policy and value estimations
@@ -41,7 +60,7 @@ def karpathy_net(input_shape, dtype, classes):
         net,
         classes,
         activation_fn=None,
-        weights_initializer=tf.contrib.layers.xavier_initializer(uniform=True, seed=1)
+        weights_initializer=tf.truncated_normal_initializer(mean=0, stddev=0.01)
     )
 
     ret['logits'] = logits

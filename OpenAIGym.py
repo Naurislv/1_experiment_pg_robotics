@@ -6,7 +6,7 @@ Run for more info :
 
     python CarRacing.py --help
 
-SUPPORTED ENVIRONMENTS:
+SAMPLE ENVIRONMENT:
 
     1.CarRacing-v0 : https://gym.openai.com/envs/CarRacing-v0
 
@@ -111,17 +111,18 @@ class GymEnv(object):
         # Observation sapce shape after preprocessing
         os_sample_shape = self.prepro(self.env.observation_space.sample(), None)[0].shape
         LOGGER.info("Observation sample shape after preprocess: %s", os_sample_shape)
-        # Policy network - responsilbe for sampled actions
+
         if FLAGS.gpu:
             device = '/gpu:0'
         else:
             device = '/cpu:0'
 
         with tf.device(device):
+            # Policy network - responsilbe for sampled actions
             self.policy = policy(list(os_sample_shape),
                                  self.data_type,
                                  self.n_actions)
-            self.policy.build('PolicyGradient')
+            self.policy.define('PolicyGradient')
 
     def run(self, run_name):
         """Start loop."""
@@ -197,12 +198,7 @@ class GymEnv(object):
             # save_im('save_im/{}.jpg'.format(n_frames),
             #         np.concatenate((prev_img, policy_input[:, :, 0]), axis=1))
 
-            action = self.policy.predict(policy_input)[0][0]
-            # aprob = aprob[0, :]
-
-            # action = np.random.choice(self.n_actions, p=aprob)
-            # label = np.zeros_like(aprob)
-            # label[action] = 1
+            action = self.policy.sample_action(policy_input)[0][0]
 
             label = np.zeros((self.n_actions), dtype=self.data_type['np'])
             label[action] = 1
@@ -212,7 +208,7 @@ class GymEnv(object):
             reward_sum += reward
 
             if n_frames > 2:
-                # Start 'recording' only after 3 frame because (e.g. for Pong) observation
+                # Start 'recording' only after 3 frame because for Pong observation
                 # from env.reset() differs from the one which comes from env.setp()
                 obs_his.append(policy_input)
                 action_his.append(label)
@@ -292,7 +288,7 @@ class GymEnv(object):
         # img[img == 136] = 0 # erase background (background type 3)
         # img[img != 0] = 1 # everything else (paddles, ball) just set to 1
 
-        img = img[17:96, :]
+        # img = img[17:96, :]
 
         img = img.astype(self.data_type['np'])
 
@@ -341,5 +337,4 @@ class GymEnv(object):
 if __name__ == "__main__":
 
     ENV = GymEnv('Pong-v4', Policy)
-
     ENV.run(run_name=FLAGS.name)

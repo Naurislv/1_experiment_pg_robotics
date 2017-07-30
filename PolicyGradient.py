@@ -11,8 +11,9 @@ import logging
 import tensorflow as tf
 import numpy as np
 # from MaxoutNet import maxout_cnn as policy_net
-# from GuntisNet import guntis_net as policy_net
-from KarpathyNet import karpathy_net as policy_net
+# from Nets import MaxoutNet as policy_net
+# from Nets import GuntisNet as policy_net
+from Nets import KarpathyNet as policy_net
 
 # TF_CONFIG = tf.ConfigProto()
 # TF_CONFIG.allow_soft_placement = True
@@ -47,13 +48,13 @@ class Policy(object):
         self.data_type = data_type
         self.n_actions = n_actions
 
-    def build(self, scope):
-        """Build graph."""
+    def define(self, scope):
+        """Define network graph in a scope for Policy Gradient."""
 
         with tf.variable_scope(scope):  # pylint: disable=E1129
             logging.info('Building Network in %s scope', scope)
 
-            self.net = policy_net(self.state_shape, self.data_type['tf'], self.n_actions)
+            self.net = policy_net.build(self.state_shape, self.data_type['tf'], self.n_actions)
 
             self.actions = tf.placeholder(dtype=self.data_type['tf'], shape=[None, self.n_actions])
             self.advantages = tf.placeholder(dtype=self.data_type['tf'], shape=[None, 1])
@@ -95,7 +96,7 @@ class Policy(object):
         _, loss = self._sess.run([self.train, self.loss], feed_dict=batch_feed)
         logging.info("Loss sum: %s", loss)
 
-    def predict(self, observation):
+    def sample_action(self, observation):
         """Predict action from observation.
 
         Return index of action.

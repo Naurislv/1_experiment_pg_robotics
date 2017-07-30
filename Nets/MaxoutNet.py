@@ -6,10 +6,8 @@ MaxoutCNN Neural Network.
 import logging
 import tensorflow as tf
 
-NUM_CHANNELS = 1
 
-
-def maxout_cnn(input_shape, dtype, classes):
+def build(input_shape, dtype, classes):
     """Maxout CNN Network.
 
     Input :
@@ -23,21 +21,16 @@ def maxout_cnn(input_shape, dtype, classes):
     ret = {}
 
     # Input data.
-    if len(input_shape) < 3:  # When grayscale image comes in
-        inputs = tf.placeholder(shape=[None] + input_shape, name='Input', dtype=dtype)
+    num_channels = input_shape[-1]
 
-        logging.debug('Inputs %s', inputs.get_shape().as_list())
-        ret['inputs'] = inputs
-
-        inputs = tf.expand_dims(inputs, -1)  # for conv network
-    else:
-        inputs = tf.placeholder(shape=[None] + input_shape, name='Input', dtype=dtype)
+    inputs = tf.placeholder(shape=[None] + input_shape, name='Input', dtype=dtype)
+    ret['inputs'] = inputs
 
     # Variables
     # Convolution part
 
     w_1 = tf.Variable(
-        tf.truncated_normal([15, 15, NUM_CHANNELS, 20], stddev=0.001, dtype=dtype),
+        tf.truncated_normal([15, 15, num_channels, 20], stddev=0.001, dtype=dtype),
         name='w1'
     )
     b_1 = tf.Variable(tf.zeros([20], dtype=dtype), name='b1')
