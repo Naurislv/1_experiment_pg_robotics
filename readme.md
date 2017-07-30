@@ -36,7 +36,8 @@ The main goal is to train self driving cars to learn to drive by themselves but 
 
 Sample output of training process
 
-```[2017-07-30 14:23:53,534] 13270. [52363.94s] FPS: 1093.26, Reward Sum: -2.0
+```
+[2017-07-30 14:23:53,534] 13270. [52363.94s] FPS: 1093.26, Reward Sum: -2.0
 [2017-07-30 14:23:53,583] 13270. [52363.99s] FPS: 1025.90, Reward Sum: -3.0
 [2017-07-30 14:23:53,631] 13270. [52364.04s] FPS: 1040.43, Reward Sum: -3.0
 [2017-07-30 14:23:53,648] 
@@ -57,7 +58,8 @@ Testing results using [1 hidden layer fully connected network](./KarpathyNet.py)
 
 Note that for this test specific Pong image preprocessing were used :
 
-```img[img == 17] = 0 # erase background (background type 1)
+```
+img[img == 17] = 0 # erase background (background type 1)
 img[img == 192] = 0 # erase background (background type 2)
 img[img == 136] = 0 # erase background (background type 3)
 img[img != 0] = 1 # everything else (paddles, ball) just set to 1
