@@ -4,7 +4,8 @@ The main goal is to train self driving cars to learn to drive by themselves but 
 
 [//]: # (Image References)
 
-[image1]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
+[image1]: ./Images/atari_game_performance.png "Atari game performance compare"
+[image2]: ./Images/pong_pg_results.png "Pong Policy Gradient Results"
 
 ## Dependecies
 
@@ -14,21 +15,45 @@ The main goal is to train self driving cars to learn to drive by themselves but 
 * pip install box2d
 * pip install gym[atari]
 * pip install tensorflow
-* OpenCV (Compile or install through conda)
 
 ## Issues
 
-* Current code does run faster on CPU (Intel(R) Core(TM) i7-6800K) than on GPU (GTX-1080) even though total CPU load is around 20% (While training 100%, thanks to TF multiprocessing). This may be because of latency between GPU and CPU.
+* Current code does run faster on CPU (Intel(R) Core(TM) i7-6800K) than on GPU (GTX-1080) even though total CPU load is around 20% (While training 100%, thanks to TF multiprocessing). This may be because of latency between GPU and CPU
 
-* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame.
+* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
 
-* Code need to be refactorize.
+* Code need to be refactorized
 
-## Pong-v4
+* Currently works only with discrete action space
 
-Start trainig: `python OpenAIGym.py`
+## Atari game performance comparison different between algorithms and Human
 
 ![alt text][image1]
+
+## Training
+
+`python OpenAIGym.py --render False --gpu False --name Test`
+
+Sample output of training process
+
+```[2017-07-30 14:23:53,534] 13270. [52363.94s] FPS: 1093.26, Reward Sum: -2.0
+[2017-07-30 14:23:53,583] 13270. [52363.99s] FPS: 1025.90, Reward Sum: -3.0
+[2017-07-30 14:23:53,631] 13270. [52364.04s] FPS: 1040.43, Reward Sum: -3.0
+[2017-07-30 14:23:53,648] 
+[2017-07-30 14:23:53,648] Episode done! Reward sum: -4.00 , Frames: 6369
+[2017-07-30 14:23:53,648] 
+[2017-07-30 14:23:53,793] Update weights from 64278 frames with average score: 4.6
+[2017-07-30 14:23:53,793] Used action space: {0: 416, 1: 946, 2: 22232, 3: 32888, 4: 6650, 5: 1146}
+[2017-07-30 14:23:55,945] 13271. [52366.35s] FPS: 937.53, Reward Sum: 0.0
+```
+
+# OpenAI Gym test results
+
+## Pong-v4 with Policy Gradient
+
+Testing results using [1 hidden layer fully connected network](./KarpathyNet.py) as policy Network.
+
+![alt text][image2]
 
 ## Extra Reasearch [2017.18.07]
 
@@ -63,3 +88,8 @@ There is no specific RL algorithm made just for Self Driving Cars of-course so h
 * [Safe, Multi-Agent, Reinforcement Learning for Autonomous Driving](https://arxiv.org/abs/1610.03295v1). Autonomous driving is a multi-agent setting where the host vehicle must apply sophisticated negotiation skills with other road users when overtaking, giving way, merging, taking left and right turns and while pushing ahead in unstructured urban roadways. Since there are many possible scenarios, manually tackling all possible cases will likely yield a too simplistic policy. Moreover, one must balance between unexpected behavior of other drivers/pedestrians and at the same time not to be too defensive so that normal traffic flow is maintained.
 
 * [Deep Reinforcement Learning framework for Autonomous Driving](https://arxiv.org/pdf/1704.02532.pdf). Reinforcement  learning  is  considered  to  be  a  strong  AI paradigm which can be used to teach machines through interaction with the environment and learning from their mistakes. Despite its perceived utility, it has not yet been successfully appliedin automotive applications.
+
+## Credits
+
+* Guntis Bārzdiņš
+* Renārs Liepiņš
