@@ -48,15 +48,23 @@ Sample output of training process
 [2017-07-30 14:23:55,945] 13271. [52366.35s] FPS: 937.53, Reward Sum: 0.0
 ```
 
+It is easy to switch between different Neural Network architectures because all of them return necesarry Tensorflow objects for Policy Gradient to use. Just comment current neural network import and uncomment other in [PolicyGradient.py](./PolicyGradien.py). For example we will use KarpathyNet.py network:
+
+```
+# from Nets import MaxoutNet as policy_net
+# from Nets import GuntisNet as policy_net
+from Nets import KarpathyNet as policy_net
+```
+
 # OpenAI Gym test results
 
 Plots are generated using [this code](./PlayGround.ipynb).
 
 ## Pong-v4 with Policy Gradient
 
-Testing results using [1 hidden layer fully connected network](./KarpathyNet.py) as policy Network.
+Testing results using [1 hidden layer fully connected network](./Nets/KarpathyNet.py) as policy Network.
 
-Note that for this test specific Pong image preprocessing were used :
+Note that for this Test - specific Pong image preprocessing were used :
 
 ```
 img[img == 17] = 0 # erase background (background type 1)
@@ -67,7 +75,13 @@ img[img != 0] = 1 # everything else (paddles, ball) just set to 1
 img = img[17:96, :]
 ```
 
-In future this and similar preprocessing will be replaces/remove for this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high.
+In future this and similar preprocessing will be replaced/remove so this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high.
+
+Hyperparameters:
+
+* RMSPropOptimizer(learning_rate=0.001, decay=0.99)
+* Discounted Rewards gamma = 0.99
+* Batch size (number of episodes) = 10
 
 ![alt text][image2]
 
