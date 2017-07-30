@@ -26,7 +26,7 @@ The main goal is to train self driving cars to learn to drive by themselves but 
 
 * Currently works only with discrete action space
 
-## Atari game performance comparison different between algorithms and Human
+## Atari game performance comparison between algorithms and Human
 
 ![alt text][image1]
 
@@ -52,6 +52,18 @@ Sample output of training process
 ## Pong-v4 with Policy Gradient
 
 Testing results using [1 hidden layer fully connected network](./KarpathyNet.py) as policy Network.
+
+Note that for this test specific Pong image preprocessing were used :
+
+```img[img == 17] = 0 # erase background (background type 1)
+img[img == 192] = 0 # erase background (background type 2)
+img[img == 136] = 0 # erase background (background type 3)
+img[img != 0] = 1 # everything else (paddles, ball) just set to 1
+
+img = img[17:96, :]
+```
+
+In future this and similar preprocessing will be replaces/remove for this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high.
 
 ![alt text][image2]
 
