@@ -104,6 +104,10 @@ Hyperparameters:
 
 ![alt text][image3]
 
+### Policy NN : [2 x conv, 2 x fully connected ](./Nets/GuntisNet.py)
+
+This network was only trained with input images as human would see, using all 3 color channels and no cropping, except it's downsampled (resized without interpolation) two times.
+
 ## Extra Reasearch [2017.18.07]
 
 ### Virtual Environments for Self Driving Cars

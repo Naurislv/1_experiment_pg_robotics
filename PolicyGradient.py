@@ -12,14 +12,14 @@ import tensorflow as tf
 import numpy as np
 # from MaxoutNet import maxout_cnn as policy_net
 # from Nets import MaxoutNet as policy_net
-# from Nets import GuntisNet as policy_net
-from Nets import KarpathyNet as policy_net
+from Nets import GuntisNet as policy_net
+# from Nets import KarpathyNet as policy_net
 
-# TF_CONFIG = tf.ConfigProto()
-# TF_CONFIG.allow_soft_placement = True
-# TF_CONFIG.gpu_options.allocator_type = 'BFC'  # pylint: disable=E1101
+TF_CONFIG = tf.ConfigProto()
+TF_CONFIG.allow_soft_placement = True
+TF_CONFIG.gpu_options.allocator_type = 'BFC'  # pylint: disable=E1101
 # TF_CONFIG.gpu_options.per_process_gpu_memory_fraction = 0.8
-# TF_CONFIG.gpu_options.allow_growth = True  # pylint: disable=E1101
+TF_CONFIG.gpu_options.allow_growth = True  # pylint: disable=E1101
 # TF_CONFIG.log_device_placement = True
 
 class Policy(object):
@@ -33,10 +33,10 @@ class Policy(object):
 
         """
         self.rmsprop_decay = 0.99
-        self.learning_rate = 1e-3
+        self.learning_rate = 1e-4
         self.state_shape = state_shape
 
-        self._sess = tf.Session()
+        self._sess = tf.Session(config=TF_CONFIG)
 
         self.net = None
         self.actions = None

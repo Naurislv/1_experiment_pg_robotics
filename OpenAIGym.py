@@ -82,6 +82,7 @@ class GymEnv(object):
     def __init__(self, env_name, policy):
 
         self.data_type = {'tf': tf.float32, 'np': np.float32}
+        self.no_ep_load = 0  # number of episodes load from statistics to be displayed
 
         # To store data and make plots later
         self.episdod_reward = []  # episode reward sum
@@ -115,10 +116,16 @@ class GymEnv(object):
         if FLAGS.gpu:
             device = '/gpu:0'
         else:
+            # Tensorflow somehow allocated GPU memory even though used /cpu:o
+            # This masks GPU device from tensorflow.
+            # https://stackoverflow.com/questions/44500733/tensorflow-allocating-
+            # gpu-memory-when-using-tf-device-cpu0
+            os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
             device = '/cpu:0'
 
+        LOGGER.info("Setting up %s TF device for training", device)
+
         with tf.device(device):
-            # Policy network - responsilbe for sampled actions
             self.policy = policy(list(os_sample_shape),
                                  self.data_type,
                                  self.n_actions)
@@ -148,6 +155,7 @@ class GymEnv(object):
         # Try to load statistics
         try:
             statistics = np.load(statistics_file)
+            self.no_ep_load = len(statistics[0])
             LOGGER.info("Statistics loaded %s", statistics.shape)
         except FileNotFoundError:
             LOGGER.warning("Statistics Not Found: %s", statistics_file)
@@ -176,7 +184,7 @@ class GymEnv(object):
         prev_img = None  # Previous image
 
         reward_sum = 0
-        batch_size = 10
+        batch_size = 8
 
         # Used for training after episode
         reward_his = []  # save rewards
@@ -194,9 +202,6 @@ class GymEnv(object):
 
             # preprocess the observation, set input to network to be difference image
             policy_input, prev_img = self.prepro(observation, prev_img)
-
-            # save_im('save_im/{}.jpg'.format(n_frames),
-            #         np.concatenate((prev_img, policy_input[:, :, 0]), axis=1))
 
             action = self.policy.sample_action(policy_input)[0][0]
 
@@ -221,8 +226,9 @@ class GymEnv(object):
                 end_time = time.time()
 
                 fps = 50 / (end_time - start_time)
-                LOGGER.debug("%s. [%.2fs] FPS: %.2f, Reward Sum: %s",
-                             episode_number, end_time - train_time, fps, reward_sum)
+                LOGGER.debug("%s.[%s]. T[%.2fs] FPS: %.2f, Reward Sum: %s",
+                             episode_number, self.no_ep_load, end_time - train_time,
+                             fps, reward_sum)
                 start_time = time.time()
 
             if FLAGS.video_small:
@@ -281,7 +287,8 @@ class GymEnv(object):
         # img = cv2.resize(img, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_AREA)
 
         # downsample by factor of 2 ##choose colour 2 to improve visibility in most games
-        img = img[::2, ::2, 2]
+        # img = img[::2, ::2, 2]
+        img = img[::2, ::2]  # Downsample but keep all channels
 
         # img[img == 17] = 0 # erase background (background type 1)
         # img[img == 192] = 0 # erase background (background type 2)
@@ -290,20 +297,26 @@ class GymEnv(object):
 
         # img = img[17:96, :]
 
-        img = img.astype(self.data_type['np'])
+        img.astype(self.data_type['np'])
 
         # Insert motion in frame by subtracting previous frame from current
         if prev_img is not None:
             # absdiff does not give different colors if differences
             # so neural network can't distinguish betwwen previous and current frame
             # policy_input = cv2.absdiff(img, prev_img)
+
             policy_input = img - prev_img
         else:
             policy_input = np.zeros_like(img)
 
         prev_img = img
 
-        policy_input = np.expand_dims(policy_input, -1)
+        # print(policy_input.shape, prev_img.shape)
+
+        # save_im('save_im/{}.jpg'.format(str(int(round(time.time() * 1000)))),
+        #         np.concatenate((prev_img, policy_input), axis=1))
+
+        # policy_input = np.expand_dims(policy_input, -1)
 
         return policy_input, prev_img
 
