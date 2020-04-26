@@ -1,8 +1,14 @@
-# OpenAI Gym RL algorithm implementation
+# Policy Gradient for image based robotics tasks
 
-The main goal is to train self driving cars to learn to drive by themselves but while learning to do so I'm starting with basics like OpenAI Gym Pong game and so on. So in this repository I will cover multiple OpenAI Gym games but will focus on self driving cars while implementing.
+Implementation of Policy Gradient method, reinforcement learning algorithm to solve image based robotics problem. As of now it's clear that this is not the most efficient way to solve it. But before jumping to implementations such as [Asymmetric Actor Critic for Image-Based Robot Learning](https://arxiv.org/abs/1710.06542) it's beneficial to understand more simpler algorithms and their upsides and downsides.
 
-Currently only Pong is tested and works. Any other OpenAI Gym Atari game with discrete action space also should work.
+This is 1. Experiment, every next experiment will be more sophisticated and hopefully with better results.
+
+## Motivation
+
+I am working on sophisticated robotics solutions for Smart Manufacturing use-cases. In my experience I have obsereved that more simpler solutions often works better in production than more sophisticated, think OpenCV vs Machine Learning. Supervised Machine Learning methods are very hard to implement in factory because you almost never have enough nor right data to feed for agorithms. While solutions implementing classical Computer Vision algorithms (OpenCV) works well in many cases, they introduce other challenges such as calibration requirements, longer robot setups, more complex development, engineering piplines etc.
+
+Reinforcement Learning is approach which is changing the game ([Osaro](https://www.osaro.com/), [Vicarious](https://www.vicarious.com/)). Instead of jumping to latest and greatest I have decided to start with simplest and build my knowledge and experementation experience from here.
 
 [//]: # (Image References)
 
@@ -10,28 +16,19 @@ Currently only Pong is tested and works. Any other OpenAI Gym Atari game with di
 [image2]: ./Images/pong_pg_results.png "Pong Policy Gradient Results"
 [image3]: ./Images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
 
-## Dependecies
+## Requirements
 
-* pip install gym
-* pip install imageio
-* sudo apt-get install swig
-* pip install box2d
-* pip install gym[atari]
-* pip install tensorflow
+Tensorflow 2.0+
 
-## Issues
+Install all dependecies: `pip install -r requirements.txt`
+
+## Known issues
 
 * Current code does run faster on CPU (Intel(R) Core(TM) i7-6800K) than on GPU (GTX-1080) even though total CPU load is around 20% (While training 100%, thanks to TF multiprocessing). This may be because of latency between GPU and CPU
 
 * Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
 
-* Code need to be refactorized
-
 * Currently works only with discrete action space
-
-## Atari game performance comparison between algorithms and Human
-
-![alt text][image1]
 
 ## Training
 
@@ -43,9 +40,9 @@ Sample output of training process
 [2017-07-30 14:23:53,534] 13270. [52363.94s] FPS: 1093.26, Reward Sum: -2.0
 [2017-07-30 14:23:53,583] 13270. [52363.99s] FPS: 1025.90, Reward Sum: -3.0
 [2017-07-30 14:23:53,631] 13270. [52364.04s] FPS: 1040.43, Reward Sum: -3.0
-[2017-07-30 14:23:53,648] 
+[2017-07-30 14:23:53,648]
 [2017-07-30 14:23:53,648] Episode done! Reward sum: -4.00 , Frames: 6369
-[2017-07-30 14:23:53,648] 
+[2017-07-30 14:23:53,648]
 [2017-07-30 14:23:53,793] Update weights from 64278 frames with average score: 4.6
 [2017-07-30 14:23:53,793] Used action space: {0: 416, 1: 946, 2: 22232, 3: 32888, 4: 6650, 5: 1146}
 [2017-07-30 14:23:55,945] 13271. [52366.35s] FPS: 937.53, Reward Sum: 0.0
@@ -128,21 +125,6 @@ There are few virtual environments specifically for self driving cars at the mom
 
 * [TORCS](https://en.wikipedia.org/wiki/TORCS) is the open racing car simulator. I wasn't able to find decent home page for this simmulator. [Download](https://sourceforge.net/projects/torcs/) and more [info](http://torcs.sourceforge.net/). Also worth checking [publication](http://personal.ee.surrey.ac.uk/Personal/N.Pugeault/projects/RRUDZITS_LEARNING_AUTONOMOUS_DRIVING_FINAL.pdf) by Reinis Rudzītis.
 
-### Reinforcement Learning for Self Driving Cars
+## Atari game performance comparison between algorithms and Human
 
-There is no specific RL algorithm made just for Self Driving Cars of-course so here I will also cover RL algorithms in general and may add some sources and comments which specifically relates to self driving cars. You may solve some problems which may just work for Self Driving cars and not other domains by editing RL algorithm. There are plenty of materials online so I will try to conver only those which are more relevant to our topic.
-
-* Probably the best starting point for RL is [Deep Reinforcement Learning: Pong from pixels](http://karpathy.github.io/2016/05/31/rl/) by Karpathy. Where he give sources for other materials for letcures. Explains why __Policy Gradient__ is better than __Deep Q__, explains why it works and actually show how to implement it purely in using Python and numpy.
-
-* Also really great [guide](https://medium.com/emergent-future/simple-reinforcement-learning-with-tensorflow-part-0-q-learning-with-tables-and-neural-networks-d195264329d0) for beginners by [Arthur Juliani](https://medium.com/@awjuliani)
-
-* [A3C](https://arxiv.org/abs/1602.01783). We propose a conceptually simple and lightweight framework for deep reinforcement learning that uses asynchronous gradient descent for optimization of deep neural network controllers. We present asynchronous variants of four standard reinforcement learning algorithms and show that parallel actor-learners have a stabilizing effect on training allowing all four methods to successfully train neural network controllers. The best performing method, an asynchronous variant of actor-critic, surpasses the current state-of-the-art on the Atari domain while training for half the time on a single multi-core CPU instead of a GPU. Furthermore, we show that asynchronous actor-critic succeeds on a wide variety of continuous motor control problems as well as on a new task of navigating random 3D mazes using a visual input.
-
-* [Safe, Multi-Agent, Reinforcement Learning for Autonomous Driving](https://arxiv.org/abs/1610.03295v1). Autonomous driving is a multi-agent setting where the host vehicle must apply sophisticated negotiation skills with other road users when overtaking, giving way, merging, taking left and right turns and while pushing ahead in unstructured urban roadways. Since there are many possible scenarios, manually tackling all possible cases will likely yield a too simplistic policy. Moreover, one must balance between unexpected behavior of other drivers/pedestrians and at the same time not to be too defensive so that normal traffic flow is maintained.
-
-* [Deep Reinforcement Learning framework for Autonomous Driving](https://arxiv.org/pdf/1704.02532.pdf). Reinforcement  learning  is  considered  to  be  a  strong  AI paradigm which can be used to teach machines through interaction with the environment and learning from their mistakes. Despite its perceived utility, it has not yet been successfully appliedin automotive applications.
-
-## Credits
-
-* Guntis Bārzdiņš
-* Renārs Liepiņš
+![alt text][image1]
