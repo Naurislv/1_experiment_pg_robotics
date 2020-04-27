@@ -7,6 +7,5 @@ save_im/
 models/
 outputs/
 .mypy_cache
-
-# Ignore all files with prefix __ - those are testing, temporary files
-__*
+.pylintrc
+.vscode

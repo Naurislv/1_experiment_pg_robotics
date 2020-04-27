@@ -8,23 +8,31 @@ This is 1. Experiment, every next experiment will be more sophisticated and hope
 
 I am working on sophisticated robotics solutions for Smart Manufacturing use-cases. In my experience I have obsereved that more simpler solutions often works better in production than more sophisticated, think OpenCV vs Machine Learning. Supervised Machine Learning methods are very hard to implement in factory because you almost never have enough nor right data to feed for agorithms. While solutions implementing classical Computer Vision algorithms (OpenCV) works well in many cases, they introduce other challenges such as calibration requirements, longer robot setups, more complex development, engineering piplines etc.
 
+Note that I have specific robotics use-cases in mind which I would like to replicate in simulator therefore just any simulator with or without robot will not work and this is why I am motivated to create something working for my specific needs and not the approach which would work with multiple environments.
+
 Reinforcement Learning is approach which is changing the game ([Osaro](https://www.osaro.com/), [Vicarious](https://www.vicarious.com/)). Instead of jumping to latest and greatest I have decided to start with simplest and build my knowledge and experementation experience from here.
 
 [//]: # (Image References)
 
-[image1]: ./Images/atari_game_performance.png "Atari game performance compare"
-[image2]: ./Images/pong_pg_results.png "Pong Policy Gradient Results"
-[image3]: ./Images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
+[image1]: ./images/atari_game_performance.png "Atari game performance compare"
+[image2]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
+[image3]: ./images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
 
 ## Requirements
 
-Tensorflow 2.0+
+1. Compatible with [Tensorflow](https://www.tensorflow.org/) 2.0+
+2. Install my [custom Gym environment](https://github.com/Naurislv/image_based_fetch_gym_env.git)
+3. Install all dependecies: `pip install -r requirements.txt`
 
-Install all dependecies: `pip install -r requirements.txt`
+## Features
+
+1. Implemented PG from scratch in simple way
+2. Tensorflow 2.x support
+3. Visuals in Tensorboard
 
 ## Known issues
 
-* Current code does run faster on CPU (Intel(R) Core(TM) i7-6800K) than on GPU (GTX-1080) even though total CPU load is around 20% (While training 100%, thanks to TF multiprocessing). This may be because of latency between GPU and CPU
+* When batches are big 6+ then updates needs to be done with 7k+ images which causes GPU Out Of Memory.
 
 * Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
 
@@ -32,7 +40,11 @@ Install all dependecies: `pip install -r requirements.txt`
 
 ## Training
 
-`python OpenAIGym.py --render False --gpu False --name Test`
+`python OpenAIGym.py --render False --name Test`
+
+Running without GPU:
+
+`CUDA_VISIBLE_DEVICES= && python OpenAIGym.py --render False --name Test`
 
 Sample output of training process
 
