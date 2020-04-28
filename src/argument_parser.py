@@ -26,8 +26,7 @@ def user_args():
                              "in command. Also create report .json files. Boolean.")
     parser.add_argument('--render', type=str2bool, default=False,
                         help="Whether to render video for visual or not.")
-    parser.add_argument('--gpu', type=str2bool, default=False, help="Use GPU.")
-    parser.add_argument('--sessiod_id', type=str, default='',
+    parser.add_argument('--session_id', type=str, default='',
                         help="Session ID, will be used to save and load checkpoint and statistic "
                              "files.")
 
