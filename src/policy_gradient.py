@@ -23,7 +23,6 @@ class Policy(object):
         ARGS:
             learing_rate: learning rate
             decay: RMSprop decay
-
         """
 
         self.nb_actions = nb_actions
@@ -70,7 +69,7 @@ class Policy(object):
         """
 
         observations = tf.expand_dims(observation, axis=0)
-        action = self.model(observations, training=True, sample=True)
+        action = self.model(observations, training=False, sample=True)
 
         return action
 
