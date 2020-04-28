@@ -39,7 +39,6 @@ Insipred from :
 """
 
 # Standard imports
-import time
 import logging
 import datetime
 
@@ -92,8 +91,8 @@ def learn(policy, batch_size, summary_writer):
 
     env, observation = make_env('Pong-v4')
     prev_observation = None
-
     prev_reward = None
+
     while True:
         if ARGS.render:
             env.render()
@@ -125,21 +124,22 @@ def learn(policy, batch_size, summary_writer):
                 LOGGER.info("Update weights from %d frames with average score: %s",
                             data_holder.record_counter, data_holder.rewards.sum() / batch_size)
 
-                policy.train_step(
-                    data_holder.observations,
-                    np.vstack(data_holder.labels),
-                    np.vstack(data_holder.rewards_discounted)
-                )
+                with tf.device('cpu:0'):
+                    policy.train_step(
+                        data_holder.observations,
+                        np.vstack(data_holder.labels),
+                        np.vstack(data_holder.rewards_discounted)
+                    )
 
                 data_holder.next_batch()
+
 
 def main():
     """Run the main pipeline."""
 
     summary_writer, chk_path = setup_outputs(ARGS.session_id)
-
     policy = Policy(nb_actions=6, learing_rate=0.0001)
-    batch_size = 3
+    batch_size = 6
 
     try:
         policy.load(chk_path)
@@ -154,6 +154,8 @@ def main():
 
 
 if __name__ == "__main__":
+    PHYSICAL_DEVICES = tf.config.list_physical_devices('GPU')
+    tf.config.experimental.set_memory_growth(PHYSICAL_DEVICES[0], True)
 
     LOGGER = get_logger('gym')
     LOGGER.setLevel(logging.DEBUG)
