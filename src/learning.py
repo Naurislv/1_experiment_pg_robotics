@@ -121,6 +121,10 @@ def learn(policy, batch_size, summary_writer):
             LOGGER.info("Episode done! Reward sum: %.2f , Frames: %d",
                         data_holder.rewards_episode.sum(), data_holder.record_counter_episode)
 
+            observation = env.reset()
+            prev_observation = None
+            data_holder.next_episode()
+
             if (data_holder.episode_number - 1) % batch_size == 0:
                 LOGGER.info("Update weights from %d frames with average score: %s",
                             data_holder.record_counter, data_holder.rewards.sum() / batch_size)
@@ -131,14 +135,10 @@ def learn(policy, batch_size, summary_writer):
                             data_holder.observations,
                             np.vstack(data_holder.labels),
                             np.vstack(data_holder.rewards_discounted),
-                            step=data_holder.episode_number
+                            step=data_holder.episode_number - 1
                         )
 
                 data_holder.next_batch()
-
-            observation = env.reset()
-            prev_observation = None
-            data_holder.next_episode()
 
 
 def main():
