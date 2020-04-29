@@ -41,6 +41,7 @@ Insipred from :
 # Standard imports
 import logging
 import datetime
+from os.path import dirname, join, exists
 
 # Dependency imports
 import gym
@@ -64,6 +65,12 @@ def setup_outputs(session_id=None):
     summary_writer = tf.summary.create_file_writer(train_log_dir)
 
     chk_path = f'outputs/{session_id}/model'
+
+    if exists(f'outputs/{session_id}/step.txt'):
+        with open(f'outputs/{session_id}/step.txt', "r") as txt_file:
+            episode_number = int(txt_file.read())
+
+        tf.summary.experimental.set_step(episode_number)
 
     return summary_writer, chk_path
 
@@ -151,6 +158,8 @@ def main():
     except KeyboardInterrupt:  # Stop learning by "CTRL + C" and save files
         if not ARGS.render:
             policy.save(chk_path)
+            with open(join(dirname(chk_path), 'step.txt'), "w") as txt_file:
+                txt_file.write(str(tf.summary.experimental.get_step()))
 
 
 if __name__ == "__main__":

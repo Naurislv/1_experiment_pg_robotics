@@ -27,7 +27,11 @@ class DataManager:
         self._observations = []
 
         self.record_timestamp = None
-        self.episode_number = 1
+
+        # Load the step from previous trainings
+        self.episode_number = tf.summary.experimental.get_step()
+        if not self.episode_number:
+            self.episode_number = 1
 
         self.start_time = time.time()
         self.record_counter = 0
@@ -124,3 +128,5 @@ class DataManager:
 
         self.episode_number += 1
         self._last_record_count = self.record_counter
+
+        tf.summary.experimental.set_step(self.episode_number)
