@@ -121,31 +121,32 @@ def learn(policy, batch_size, summary_writer):
             LOGGER.info("Episode done! Reward sum: %.2f , Frames: %d",
                         data_holder.rewards_episode.sum(), data_holder.record_counter_episode)
 
-            observation = env.reset()
-            prev_observation = None
-
-            data_holder.next_episode()
-
             if (data_holder.episode_number - 1) % batch_size == 0:
                 LOGGER.info("Update weights from %d frames with average score: %s",
                             data_holder.record_counter, data_holder.rewards.sum() / batch_size)
 
                 with tf.device('cpu:0'):
-                    policy.train_step(
-                        data_holder.observations,
-                        np.vstack(data_holder.labels),
-                        np.vstack(data_holder.rewards_discounted)
-                    )
+                    with summary_writer.as_default():
+                        policy.train_step(
+                            data_holder.observations,
+                            np.vstack(data_holder.labels),
+                            np.vstack(data_holder.rewards_discounted),
+                            step=data_holder.episode_number
+                        )
 
                 data_holder.next_batch()
+
+            observation = env.reset()
+            prev_observation = None
+            data_holder.next_episode()
 
 
 def main():
     """Run the main pipeline."""
 
     summary_writer, chk_path = setup_outputs(ARGS.session_id)
-    policy = Policy(nb_actions=6, learing_rate=0.0001, summary_writer=summary_writer)
-    batch_size = 6
+    policy = Policy(nb_actions=6, learing_rate=0.0001)
+    batch_size = 4
 
     try:
         policy.load(chk_path)

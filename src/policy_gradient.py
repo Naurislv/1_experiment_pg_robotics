@@ -18,13 +18,12 @@ LOGGER = get_logger('policy')
 class Policy(object):
     """Three Dense layers"""
 
-    def __init__(self, nb_actions, learing_rate=1e-4, decay=0.99, summary_writer=None):
+    def __init__(self, nb_actions, learing_rate=1e-4, decay=0.99):
         """
         ARGS:
             learing_rate: learning rate
             decay: RMSprop decay
         """
-        self.summary_writer = summary_writer
 
         self.nb_actions = nb_actions
         self.model = NatureCNN(self.nb_actions)
@@ -35,7 +34,7 @@ class Policy(object):
         )
 
     @tf.function(experimental_relax_shapes=True)
-    def train_step(self, observations, actions, advantages):
+    def train_step(self, observations, actions, advantages, step=None):
         """Make a single training step."""
 
         with tf.GradientTape() as tape:
@@ -45,9 +44,8 @@ class Policy(object):
             predictions = self.model(observations, training=True)
             loss = surrogate_loss(predictions, actions, advantages)
 
-        if self.summary_writer:
-            with self.summary_writer.as_default():
-                tf.summary.scalar('loss', loss, step=tf.summary.experimental.get_step())
+        if step is not None:
+            tf.summary.scalar('loss', loss, step=step)
 
         gradients = tape.gradient(loss, self.model.trainable_variables)
         self.optimizer.apply_gradients(zip(gradients, self.model.trainable_variables))
