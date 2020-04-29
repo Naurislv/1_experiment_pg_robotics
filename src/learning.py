@@ -83,9 +83,8 @@ def make_env(name):
     LOGGER.info("%s initialized", name)
 
     # TODO: check
-    # Start 'recording' only after 3. frame because for Pong observation
-    # from env.reset() differs from the one which comes from env.setp()
-    for _ in range(2):
+    # reset() gives differently coloured frame therefor do 1 step to get proper observation
+    for _ in range(1):
         observation, _, _, _ = env.step(0)
 
     return env, observation
@@ -105,7 +104,7 @@ def learn(policy, batch_size, summary_writer):
             env.render()
 
         # preprocess the observation, set input to network to be difference image
-        policy_input, prev_observation = pong_img_preproc(observation, prev_observation)
+        prev_observation, policy_input = pong_img_preproc(prev_observation, observation)
 
         action = policy.sample_action(policy_input)[0][0]
 
