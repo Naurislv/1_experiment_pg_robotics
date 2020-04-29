@@ -25,6 +25,12 @@ def pong_img_preproc(img, prev_img):
     # downsample by factor of 2
     img = img[::2, ::2]  # Downsample but keep all channels
 
+    img[img == 17] = 0 # erase background (background type 1)
+    img[img == 192] = 0 # erase background (background type 2)
+    img[img == 136] = 0 # erase background (background type 3)
+    img[img != 0] = 1 # everything else (paddles, ball) just set to 1
+    img = img[17:96, :]
+
     # Insert motion in frame by subtracting previous frame from current
     if prev_img is not None:
         policy_input = img - prev_img
