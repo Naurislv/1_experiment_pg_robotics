@@ -144,7 +144,7 @@ def main():
     """Run the main pipeline."""
 
     summary_writer, chk_path = setup_outputs(ARGS.session_id)
-    policy = Policy(nb_actions=6, learing_rate=0.0001)
+    policy = Policy(nb_actions=6, learing_rate=0.0001, summary_writer=summary_writer)
     batch_size = 6
 
     try:
