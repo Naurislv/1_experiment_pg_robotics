@@ -82,8 +82,6 @@ def make_env(name):
     observation = env.reset()
     LOGGER.info("%s initialized", name)
 
-    # TODO: check
-    # reset() gives differently coloured frame therefor do 1 step to get proper observation
     for _ in range(1):
         observation, _, _, _ = env.step(0)
 
@@ -135,7 +133,7 @@ def learn(policy, batch_size, summary_writer):
                             data_holder.observations,
                             np.vstack(data_holder.labels),
                             np.vstack(data_holder.rewards_discounted),
-                            step=data_holder.episode_number - 1
+                            step=tf.constant(data_holder.episode_number - 1, dtype=tf.int64)
                         )
 
                 data_holder.next_batch()
