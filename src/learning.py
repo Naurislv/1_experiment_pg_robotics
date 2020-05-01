@@ -55,19 +55,28 @@ from utils import get_logger, pong_img_preproc
 from data_management import DataManager
 
 
-def setup_outputs(session_id=None):
+def setup_outputs():
     """Setup Tensorboard and runtime outputs directories and files"""
 
+    prefix = ''
+    if ARGS.test:
+        prefix = 'test'
+
+    session_descriptor = (f"{prefix}lr[{ARGS.learning_rate}]_bs[{ARGS.batch_size}]_"
+                          f"policy[{ARGS.policy}]_model[{ARGS.model}]_env[{ARGS.env}]")
+
+    session_id = ARGS.session_id
     if not session_id:
         session_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    train_log_dir = f'outputs/{session_id}/logs/'
+    train_log_dir = f'outputs/{session_id}/{session_descriptor}/'
     summary_writer = tf.summary.create_file_writer(train_log_dir)
 
     chk_path = f'outputs/{session_id}/model'
 
-    if exists(f'outputs/{session_id}/step.txt'):
-        with open(f'outputs/{session_id}/step.txt', "r") as txt_file:
+    step_path = f'outputs/{session_id}/{prefix}step.txt'
+    if exists(step_path):
+        with open(step_path, "r") as txt_file:
             episode_number = int(txt_file.read())
 
         tf.summary.experimental.set_step(episode_number)
@@ -88,17 +97,17 @@ def make_env(name):
     return env, observation
 
 
-def learn(policy, batch_size, summary_writer):
+def learn(env_name, policy, batch_size, summary_writer):
     """Learning is happening here."""
 
     data_holder = DataManager(summary_writer)
 
-    env, observation = make_env('Pong-v4')
+    env, observation = make_env(env_name)
     prev_observation = None
     prev_reward = None
 
     while True:
-        if ARGS.render:
+        if ARGS.test:
             env.render()
 
         # preprocess the observation, set input to network to be difference image
@@ -142,9 +151,8 @@ def learn(policy, batch_size, summary_writer):
 def main():
     """Run the main pipeline."""
 
-    summary_writer, chk_path = setup_outputs(ARGS.session_id)
-    policy = Policy(nb_actions=6, learing_rate=0.0001)
-    batch_size = 4
+    summary_writer, chk_path = setup_outputs()
+    policy = Policy(nb_actions=6, learing_rate=ARGS.learning_rate)
 
     try:
         policy.load(chk_path)
@@ -152,9 +160,9 @@ def main():
         LOGGER.warning("Checkpoint Not Found: %s", chk_path)
 
     try:
-        learn(policy, batch_size, summary_writer)
+        learn(ARGS.env, policy, ARGS.batch_size, summary_writer)
     except KeyboardInterrupt:  # Stop learning by "CTRL + C" and save files
-        if not ARGS.render:
+        if not ARGS.test:
             policy.save(chk_path)
             with open(join(dirname(chk_path), 'step.txt'), "w") as txt_file:
                 txt_file.write(str(tf.summary.experimental.get_step()))

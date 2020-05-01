@@ -3,6 +3,7 @@
 # Standard imports
 import argparse
 
+
 def str2bool(val):
     """String to boolean type."""
 
@@ -15,20 +16,21 @@ def str2bool(val):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def user_args():
     """Parse user input arguments."""
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--video_small', type=str2bool, default=False,
-                        help="Whether to record and save video or not. Boolean.")
-    parser.add_argument('--video_big', type=str2bool, default=False,
-                        help="Whether to record and save video or not. Gym built "
-                             "in command. Also create report .json files. Boolean.")
-    parser.add_argument('--render', type=str2bool, default=False,
-                        help="Whether to render video for visual or not.")
+    parser.add_argument('--test', type=str2bool, default=False,
+                        help="Whether to test trained model or not.")
     parser.add_argument('--session_id', type=str, default='',
                         help="Session ID, will be used to save and load checkpoint and statistic "
                              "files.")
+    parser.add_argument('--learning_rate', type=float, default=0.0001, help="Learning rate")
+    parser.add_argument('--batch_size', type=int, default=4, help="Batch size")
+    parser.add_argument('--env', type=str, default='Pong-v4', help="Environment name")
+    parser.add_argument('--model', type=str, default='NatureCNN', help="Policy network name")
+    parser.add_argument('--policy', type=str, default='PG', help="Policy algorithm name")
 
     args = parser.parse_args()
 
