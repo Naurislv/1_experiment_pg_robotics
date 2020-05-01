@@ -52,27 +52,19 @@ class Policy(object):
 
         return predictions
 
-    @tf.function(experimental_relax_shapes=True)
-    def test_step(self, observations):
-        """Take a single test step."""
-
-        with tf.GradientTape() as tape:  # pylint: disable=unused-variable
-
-            # training=True is only needed if there are layers with different
-            # behavior during training versus inference (e.g. Dropout).
-            predictions = self.model(observations, training=False)
-
-        return predictions
-
     @tf.function
-    def sample_action(self, observation):
+    def sample_action(self, observation, test=False):
         """Sample action from observation.
 
         Return index of action.
         """
 
         observations = tf.expand_dims(observation, axis=0)
-        action = self.model(observations, training=False, sample=True)
+        if not test:
+            action = self.model(observations, training=False, sample=True)[0]
+        else:
+            action = self.model(observations, training=False, sample=False)
+            action = tf.argmax(input=action, axis=1)
 
         return action
 

@@ -42,6 +42,7 @@ Insipred from :
 import logging
 import datetime
 from os.path import dirname, join, exists
+import time
 
 # Dependency imports
 import gym
@@ -113,7 +114,7 @@ def learn(env_name, policy, batch_size, summary_writer):
         # preprocess the observation, set input to network to be difference image
         prev_observation, policy_input = pong_img_preproc(prev_observation, observation)
 
-        action = policy.sample_action(policy_input)[0][0]
+        action = policy.sample_action(policy_input, test=ARGS.test)[0]
 
         # step the environment and get new measurements
         observation, reward, done, _ = env.step(action)
@@ -132,7 +133,7 @@ def learn(env_name, policy, batch_size, summary_writer):
             prev_observation = None
             data_holder.next_episode()
 
-            if (data_holder.episode_number - 1) % batch_size == 0:
+            if (data_holder.episode_number - 1) % batch_size == 0 and not ARGS.test:
                 LOGGER.info("Update weights from %d frames with average score: %s",
                             data_holder.record_counter, data_holder.rewards.sum() / batch_size)
 
@@ -146,6 +147,11 @@ def learn(env_name, policy, batch_size, summary_writer):
                         )
 
                 data_holder.next_batch()
+            elif (data_holder.episode_number - 1) % batch_size == 0:
+                data_holder.next_batch()
+
+        if ARGS.test:
+            time.sleep(0.01)
 
 
 def main():
