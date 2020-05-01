@@ -133,21 +133,20 @@ def learn(env_name, policy, batch_size, summary_writer):
             prev_observation = None
             data_holder.next_episode()
 
-            if (data_holder.episode_number - 1) % batch_size == 0 and not ARGS.test:
+            if data_holder.record_counter >= batch_size and not ARGS.test:
                 LOGGER.info("Update weights from %d frames with average score: %s",
                             data_holder.record_counter, data_holder.rewards.sum() / batch_size)
 
-                with tf.device('cpu:0'):
-                    with summary_writer.as_default():
-                        policy.train_step(
-                            data_holder.observations,
-                            np.vstack(data_holder.labels),
-                            np.vstack(data_holder.rewards_discounted),
-                            step=tf.constant(data_holder.episode_number - 1, dtype=tf.int64)
-                        )
+                with summary_writer.as_default():
+                    policy.train_step(
+                        data_holder.observations,
+                        np.vstack(data_holder.labels),
+                        np.vstack(data_holder.rewards_discounted),
+                        step=tf.constant(data_holder.episode_number - 1, dtype=tf.int64)
+                    )
 
                 data_holder.next_batch()
-            elif (data_holder.episode_number - 1) % batch_size == 0:
+            elif data_holder.record_counter >= batch_size:
                 data_holder.next_batch()
 
         if ARGS.test:
@@ -175,12 +174,17 @@ def main():
 
 
 if __name__ == "__main__":
-    PHYSICAL_DEVICES = tf.config.list_physical_devices('GPU')
-    tf.config.experimental.set_memory_growth(PHYSICAL_DEVICES[0], True)
-
     LOGGER = get_logger('gym')
     LOGGER.setLevel(logging.DEBUG)
 
     ARGS = user_args()
 
-    main()
+    if ARGS.gpu:
+        PHYSICAL_DEVICES = tf.config.list_physical_devices('GPU')
+        tf.config.experimental.set_memory_growth(PHYSICAL_DEVICES[0], True)
+
+        main()
+    else:
+        with tf.device('cpu:0'):
+            main()
+

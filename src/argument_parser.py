@@ -27,10 +27,11 @@ def user_args():
                         help="Session ID, will be used to save and load checkpoint and statistic "
                              "files.")
     parser.add_argument('--learning_rate', type=float, default=0.0001, help="Learning rate")
-    parser.add_argument('--batch_size', type=int, default=4, help="Batch size")
+    parser.add_argument('--batch_size', type=int, default=13000, help="Number of frames per batch")
     parser.add_argument('--env', type=str, default='Pong-v4', help="Environment name")
     parser.add_argument('--model', type=str, default='NatureCNN', help="Policy network name")
     parser.add_argument('--policy', type=str, default='PG', help="Policy algorithm name")
+    parser.add_argument('--gpu', type=str2bool, default=True, help="Use GPU instead of CPU")
 
     args = parser.parse_args()
 
