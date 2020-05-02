@@ -135,7 +135,8 @@ def learn(env_name, policy, batch_size, summary_writer):
 
             if data_holder.record_counter >= batch_size and not ARGS.test:
                 LOGGER.info("Update weights from %d frames with average score: %s",
-                            data_holder.record_counter, data_holder.rewards.sum() / batch_size)
+                            data_holder.record_counter,
+                            data_holder.rewards.sum() / (data_holder.episode_number - 1))
 
                 with summary_writer.as_default():
                     policy.train_step(
