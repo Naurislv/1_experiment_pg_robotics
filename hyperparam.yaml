@@ -1,0 +1,28 @@
+trainingInput:
+  scaleTier: BASIC
+  hyperparameters:
+    # Number of model we are allowing to traing
+    maxTrials: 40
+    # Number of models running in parallel
+    maxParallelTrials: 1
+    enableTrialEarlyStopping: False
+    # goal is to maximize the metric
+    goal: MAXIMIZE
+    # name of the metric
+    hyperparameterMetricTag: reward
+    # Specify the parameter which could be tuned during training
+    params:
+    - parameterName: learning_rate
+      type: DOUBLE
+      minValue: 0.00005
+      maxValue: 0.0005
+      scaleType: UNIT_LOG_SCALE
+    - parameterName: batch_size
+      type: DISCRETE
+      discreteValues:
+      - 2000
+      - 4000
+      - 7000
+      - 10000
+      - 20000
+      - 35000

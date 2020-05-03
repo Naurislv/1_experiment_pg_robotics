@@ -9,3 +9,5 @@ outputs/
 .mypy_cache
 .pylintrc
 .vscode
+*.egg-info
+MANIFEST

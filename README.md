@@ -4,69 +4,30 @@ Implementation of Policy Gradient method, reinforcement learning algorithm to so
 
 This is 1. Experiment, every next experiment will be more sophisticated and hopefully with better results.
 
-## Motivation
-
-I am working on sophisticated robotics solutions for Smart Manufacturing use-cases. In my experience I have obsereved that more simpler solutions often works better in production than more sophisticated, think OpenCV vs Machine Learning. Supervised Machine Learning methods are very hard to implement in factory because you almost never have enough nor right data to feed for agorithms. While solutions implementing classical Computer Vision algorithms (OpenCV) works well in many cases, they introduce other challenges such as calibration requirements, longer robot setups, more complex development, engineering piplines etc.
-
-Note that I have specific robotics use-cases in mind which I would like to replicate in simulator therefore just any simulator with or without robot will not work and this is why I am motivated to create something working for my specific needs and not the approach which would work with multiple environments.
-
-Reinforcement Learning is approach which is changing the game ([Osaro](https://www.osaro.com/), [Vicarious](https://www.vicarious.com/)). Instead of jumping to latest and greatest I have decided to start with simplest and build my knowledge and experementation experience from here.
-
-[//]: # (Image References)
-
-[image1]: ./images/atari_game_performance.png "Atari game performance compare"
-[image2]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
-[image3]: ./images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
-
-## Requirements
-
-1. Compatible with [Tensorflow](https://www.tensorflow.org/) 2.0+
-2. Install my [custom Gym environment](https://github.com/Naurislv/image_based_fetch_gym_env.git)
-3. Install all dependecies: `pip install -r requirements.txt`
-
 ## Features
 
 1. Implemented PG from scratch in simple way
 2. Tensorflow 2.x support
 3. Visuals in Tensorboard
+4. Ready to be run on Cloud (Google Cloud Platform)
 
-## Known issues
+## Requirements
 
-* When batches are big 6+ then updates needs to be done with 7k+ images which causes GPU Out Of Memory.
+1. Python 3.7+, Tensorflow](https://www.tensorflow.org/) >=2.1, Linux (Debian)
+2. My [custom Gym environment](https://github.com/Naurislv/image_based_fetch_gym_env.git)
+3. Install all dependecies: `pip install -r requirements.txt`
 
-* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
+## Training locally
 
-* Currently works only with discrete action space
+1. `git clone https://github.com/Naurislv/1_experiment_pg_robotics.git`
+2. `cd 1_experiment_pg_robotics/policy_gradient_robot_learning`
+3. GPU: `python learning.py --episodes 17000 --batch_size 10000`
+4. CPU: `export CUDA_VISIBLE_DEVICES= && python learning.py --gpu False --episodes 17000 --batch_size 10000`
 
-## Training
+## Training on cloud
 
-`python OpenAIGym.py --render False --name Test`
-
-Running without GPU:
-
-`CUDA_VISIBLE_DEVICES= && python OpenAIGym.py --render False --name Test`
-
-Sample output of training process
-
-```
-[2017-07-30 14:23:53,534] 13270. [52363.94s] FPS: 1093.26, Reward Sum: -2.0
-[2017-07-30 14:23:53,583] 13270. [52363.99s] FPS: 1025.90, Reward Sum: -3.0
-[2017-07-30 14:23:53,631] 13270. [52364.04s] FPS: 1040.43, Reward Sum: -3.0
-[2017-07-30 14:23:53,648]
-[2017-07-30 14:23:53,648] Episode done! Reward sum: -4.00 , Frames: 6369
-[2017-07-30 14:23:53,648]
-[2017-07-30 14:23:53,793] Update weights from 64278 frames with average score: 4.6
-[2017-07-30 14:23:53,793] Used action space: {0: 416, 1: 946, 2: 22232, 3: 32888, 4: 6650, 5: 1146}
-[2017-07-30 14:23:55,945] 13271. [52366.35s] FPS: 937.53, Reward Sum: 0.0
-```
-
-It is easy to switch between different Neural Network architectures because all of them return necesarry Tensorflow objects for Policy Gradient to use. Just comment current neural network import and uncomment other in [PolicyGradient.py](./PolicyGradient.py). For example we will use KarpathyNet.py network:
-
-```
-# from Nets import MaxoutNet as policy_net
-# from Nets import GuntisNet as policy_net
-from Nets import KarpathyNet as policy_net
-```
+1. Read [gcp reinforcement learning tutorial](https://cloud.google.com/blog/products/ai-machine-learning/deep-reinforcement-learning-on-gcp-using-hyperparameters-and-cloud-ml-engine-to-best-openai-gym-games)
+2. Run `bash run_gcloud.bash`
 
 # OpenAI Gym test results
 
@@ -113,29 +74,25 @@ Hyperparameters:
 
 ![alt text][image3]
 
-### Policy NN : [2 x conv, 2 x fully connected ](./Nets/GuntisNet.py)
+## Known issues
 
-This network was only trained with input images as human would see, using all 3 color channels and no cropping, except it's downsampled (resized without interpolation) two times.
+* When batches are big 6+ then updates needs to be done with 7k+ images which causes GPU Out Of Memory.
+* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
+* Currently works only with discrete action space
 
-## Extra Reasearch [2017.18.07]
+## Motivation
 
-### Virtual Environments for Self Driving Cars
+I am working on sophisticated robotics solutions for Smart Manufacturing use-cases. In my experience I have obsereved that more simpler solutions often works better in production than more sophisticated, think OpenCV vs Machine Learning. Supervised Machine Learning methods are very hard to implement in factory because you almost never have enough nor right data to feed for agorithms. While solutions implementing classical Computer Vision algorithms (OpenCV) works well in many cases, they introduce other challenges such as calibration requirements, longer robot setups, more complex development, engineering piplines etc.
 
-There are few virtual environments specifically for self driving cars at the moment. There of-course are more than here - Google just didn't showed them to me. Also they all does not covery full spectrum of real self driving cars but in each you can find something you may be interested in.
+Note that I have specific robotics use-cases in mind which I would like to replicate in simulator therefore just any simulator with or without robot will not work and this is why I am motivated to create something working for my specific needs and not the approach which would work with multiple environments.
 
-* [OpenAI Gym](https://gym.openai.com/) - Specially created to train Agents for RL. There are also environments which is more suited for self driving car altough nothing really close to reality but to start coding RL - this is really great place.
+Reinforcement Learning is approach which is changing the game ([Osaro](https://www.osaro.com/), [Vicarious](https://www.vicarious.com/)). Instead of jumping to latest and greatest I have decided to start with simplest and build my knowledge and experementation experience from here.
 
-* [OpenAI Universe](https://gym.openai.com/) - There are plenty of more sophisticated games than can be found in OpenAI Gym. Great thing about Universe is that you can actually play all games by yourself before to start work with them. It's harder to set everything up and running but totally worth it. Seeo [GitHub](https://github.com/openai/universe) for more information. Probably the best environment to test self driving car algorithms is [GTA-V](https://universe.openai.com/envs/gtav.SaneDriving-v0) which currently is in *coming soon* state. If you are RL beginner then you really should start with OpenAI Gym.
+[//]: # (Image References)
 
-* [Udacity Self Driving Car simulator](https://github.com/udacity/self-driving-car-sim) - Great for self driving - behavioral cloning. But not great for RL algorithms when you need to run more than one agent and get metrics of progress. Also there are no other cars and only few tracks.
-
-* [Udacity Self Driving Car Term 2 simulators](https://github.com/udacity/self-driving-car-sim/releases) Multiple simulators for multiple puropses. See [GitHub](https://github.com/udacity/self-driving-car-sim) for more information.
-
-* [Self Driving Cars in Browser](http://janhuenermann.com/projects/learning-to-drive) is virtual environment written in JavaScript. Made to train RL algorithms.
-
-* [MIT Self Driving Cars](http://selfdrivingcars.mit.edu/) is Home Page specifically dedicated to Self Driving Cars. And there you can find [DeepTesla](http://selfdrivingcars.mit.edu/deeptesla/) and [DeepTraffic](http://selfdrivingcars.mit.edu/deeptraffic/) virtual environments also developed in browser. Check [LeaderBoard](http://selfdrivingcars.mit.edu/leaderboard/) for DeepTraffic.
-
-* [TORCS](https://en.wikipedia.org/wiki/TORCS) is the open racing car simulator. I wasn't able to find decent home page for this simmulator. [Download](https://sourceforge.net/projects/torcs/) and more [info](http://torcs.sourceforge.net/). Also worth checking [publication](http://personal.ee.surrey.ac.uk/Personal/N.Pugeault/projects/RRUDZITS_LEARNING_AUTONOMOUS_DRIVING_FINAL.pdf) by Reinis Rudzītis.
+[image1]: ./images/atari_game_performance.png "Atari game performance compare"
+[image2]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
+[image3]: ./images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
 
 ## Atari game performance comparison between algorithms and Human
 

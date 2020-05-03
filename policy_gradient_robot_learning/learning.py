@@ -41,7 +41,7 @@ Insipred from :
 # Standard imports
 import logging
 import datetime
-from os.path import dirname, join, exists
+from os.path import dirname, join, exists, abspath
 import time
 
 # Dependency imports
@@ -56,8 +56,17 @@ from utils import get_logger, pong_img_preproc
 from data_management import DataManager
 
 
+class TrainingStoppedException(Exception):
+    """Used to stop the training and catch to store some files."""
+
+
 def setup_outputs():
     """Setup Tensorboard and runtime outputs directories and files"""
+
+    if 'gs://' in ARGS.output_dir:
+        dir_path = ARGS.output_dir
+    else:
+        dir_path = join(dirname(abspath(__file__)), ARGS.output_dir)
 
     prefix = ''
     if ARGS.test:
@@ -70,17 +79,17 @@ def setup_outputs():
     if not session_id:
         session_id = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
-    train_log_dir = f'outputs/{session_id}/{session_descriptor}/'
+    train_log_dir = join(dir_path, f'{session_id}/{session_descriptor}/')
     summary_writer = tf.summary.create_file_writer(train_log_dir)
 
-    chk_path = f'outputs/{session_id}/model'
-
-    step_path = f'outputs/{session_id}/{prefix}step.txt'
+    step_path = join(dir_path, f'{session_id}/{prefix}step.txt')
     if exists(step_path):
         with open(step_path, "r") as txt_file:
             episode_number = int(txt_file.read())
 
         tf.summary.experimental.set_step(episode_number)
+
+    chk_path = join(dir_path, f'{session_id}/model')
 
     return summary_writer, chk_path
 
@@ -98,7 +107,7 @@ def make_env(name):
     return env, observation
 
 
-def learn(env_name, policy, batch_size, summary_writer):
+def learning(env_name, policy, batch_size, summary_writer):
     """Learning is happening here."""
 
     data_holder = DataManager(summary_writer)
@@ -153,6 +162,9 @@ def learn(env_name, policy, batch_size, summary_writer):
         if ARGS.test:
             time.sleep(0.01)
 
+        if data_holder.episode_number > ARGS.episodes:
+            raise TrainingStoppedException('Training finished.')
+
 
 def main():
     """Run the main pipeline."""
@@ -166,8 +178,9 @@ def main():
         LOGGER.warning("Checkpoint Not Found: %s", chk_path)
 
     try:
-        learn(ARGS.env, policy, ARGS.batch_size, summary_writer)
-    except KeyboardInterrupt:  # Stop learning by "CTRL + C" and save files
+        learning(ARGS.env, policy, ARGS.batch_size, summary_writer)
+    except (KeyboardInterrupt, TrainingStoppedException):
+        # Stop learning save files
         if not ARGS.test:
             policy.save(chk_path)
             with open(join(dirname(chk_path), 'step.txt'), "w") as txt_file:
@@ -188,4 +201,3 @@ if __name__ == "__main__":
     else:
         with tf.device('cpu:0'):
             main()
-
