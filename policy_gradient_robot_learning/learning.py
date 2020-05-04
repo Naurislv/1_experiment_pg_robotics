@@ -52,7 +52,7 @@ import numpy as np
 # Local imports
 from policy_gradient import Policy
 from argument_parser import user_args
-from utils import get_logger, pong_img_preproc
+from utils import get_logger, pong_img_preproc, set_global_seeds
 from data_management import DataManager
 
 
@@ -172,6 +172,8 @@ def learning(env_name, policy, batch_size, summary_writer):
 def main():
     """Run the main pipeline."""
 
+    tf.random.set_seed(ARGS.seed)
+
     summary_writer, chk_path = setup_outputs()
     policy = Policy(nb_actions=6, learing_rate=ARGS.learning_rate)
 
@@ -195,6 +197,7 @@ if __name__ == "__main__":
     LOGGER.setLevel(logging.DEBUG)
 
     ARGS = user_args()
+    set_global_seeds(ARGS.seed)
 
     if ARGS.gpu:
         PHYSICAL_DEVICES = tf.config.list_physical_devices('GPU')

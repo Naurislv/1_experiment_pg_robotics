@@ -2,10 +2,11 @@
 
 # Standard imports
 import logging
+import random
 
 # Dependency imports
 import numpy as np
-# import tensorflow as tf
+import tensorflow as tf
 
 
 def get_logger(logger_name):
@@ -94,3 +95,11 @@ def discount_rewards(reward_his, gamma=.99):
         discounted_r[i] = running_add
 
     return discounted_r
+
+
+def set_global_seeds(seed):
+    """Set global seeds for random generators."""
+
+    tf.random.set_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
