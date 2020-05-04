@@ -1,8 +1,26 @@
+[//]: # (Image References)
+
+[image1]: ./images/atari_game_performance.png "Atari game performance compare"
+
 # Policy Gradient for image based robotics tasks
 
 Implementation of Policy Gradient method, reinforcement learning algorithm to solve image based robotics problem. As of now it's clear that this is not the most efficient way to solve it. But before jumping to implementations such as [Asymmetric Actor Critic for Image-Based Robot Learning](https://arxiv.org/abs/1710.06542) it's beneficial to understand more simpler algorithms and their upsides and downsides.
 
 This is 1. Experiment, every next experiment will be more sophisticated and hopefully with better results.
+
+## Table of contents
+
+- [Features](#features)
+- [Requirements](#requirements)
+- [Training locally](#training-locally)
+- [Training on cloud](#training-on-cloud)
+- [Environment image preprocessing](#environment-image-preprocessing)
+  - [1. Image based fetch environment](#1-image-based-fetch-environment)
+  - [2. Pong-v4](#2-pong-v4)
+- [Known issues](#known-issues)
+- [Motivation](#motivation)
+- [Debugging GCP](#debugging-gcp)
+- [Atari game performance comparison between algorithms and Human](#atari-game-performance-comparison-between-algorithms-and-human)
 
 ## Features
 
@@ -13,9 +31,11 @@ This is 1. Experiment, every next experiment will be more sophisticated and hope
 
 ## Requirements
 
-1. Python 3.7+, Tensorflow](https://www.tensorflow.org/) >=2.1, Linux (Debian)
-2. My [custom Gym environment](https://github.com/Naurislv/image_based_fetch_gym_env.git)
-3. Install all dependecies: `pip install -r requirements.txt`
+1. Python 3.7+,
+2. [Tensorflow](https://www.tensorflow.org/) >=2.1
+3. Linux (Debian), tested on Ubuntu 18.04
+4. __[skip]__ Install [image_based_fetch_gym_env](https://github.com/Naurislv/image_based_fetch_gym_env.git)
+5. Install all dependecies: `pip install -r requirements.txt`
 
 ## Training locally
 
@@ -26,24 +46,26 @@ This is 1. Experiment, every next experiment will be more sophisticated and hope
 
 ## Training on cloud
 
-1. Read [gcp reinforcement learning tutorial](https://cloud.google.com/blog/products/ai-machine-learning/deep-reinforcement-learning-on-gcp-using-hyperparameters-and-cloud-ml-engine-to-best-openai-gym-games)
-2. Run `bash run_gcloud.bash`
+For training I am using [GCP](https://cloud.google.com/) (Google Cloud Platform). If you are not familiar with Google AI Platform then read [gcp reinforcement learning tutorial](https://cloud.google.com/blog/products/ai-machine-learning/deep-reinforcement-learning-on-gcp-using-hyperparameters-and-cloud-ml-engine-to-best-openai-gym-games). It is outdate in terms of GCP AI Platform syntax but principles are still up to date.
 
-# OpenAI Gym test results
+1. Make sure that right parameters are set in [run_gcloud.bash](run_gcloud.bash) (by default it should work well)
+2. Make sure to use right configuration in [hyperparam.yaml](hyperparam.yaml) (by default it should work well)
+3. Execute `bash run_gcloud.bash`
+4. Open GCP Console and run to see live metrics: `tensorboard --logdir=gs://robot_learning/policy_gradient_robot_learning`
 
-Plots are generated using [this code](./PlayGround.ipynb).
+## Environment image preprocessing
 
-## Pong-v4 with Policy Gradient
+For faster convergence I use some image preprocessing.
 
-### Policy NN : [1 hidden layer fully connected network](./Nets/KarpathyNet.py)
+### 1. Image based fetch environment
 
-I trained this network for ~18k Episodes for each test because it is very time consuming - around 17h.
+_Currently not supported. Environment accessible [here](https://github.com/Naurislv/image_based_fetch_gym_env.git)_
 
-#### 1. Test
+### 2. Pong-v4
 
-For this Test specific Pong image preprocessing were used to converge faster :
+For testing purposes I used image preprocessing for algorithm to converge faster:
 
-```
+```python
 img[img == 17] = 0 # erase background (background type 1)
 img[img == 192] = 0 # erase background (background type 2)
 img[img == 136] = 0 # erase background (background type 3)
@@ -52,33 +74,11 @@ img[img != 0] = 1 # everything else (paddles, ball) just set to 1
 img = img[17:96, :]
 ```
 
-In future this and similar preprocessing will be replaced/removed so this algorithm might be used for different games. It's also worth to note that if we remove preprocessing - learning then with this network is much slower and it's possible that it wont peak this high. See 2. Test.
-
-Hyperparameters:
-
-* RMSPropOptimizer(learning_rate=0.001, decay=0.99)
-* Discounted Rewards gamma = 0.99
-* Batch size (number of episodes) = 10
-
-![alt text][image2]
-
-#### 2. Test
-
-Without preprocessing (without removing background and binarization). We can see that learning is much slower however there is no sign that it won't converge to same level as in 1. Test eventually.
-
-Hyperparameters:
-
-* RMSPropOptimizer(learning_rate=0.001, decay=0.99)
-* Discounted Rewards gamma = 0.99
-* Batch size (number of episodes) = 10
-
-![alt text][image3]
-
 ## Known issues
 
-* When batches are big 6+ then updates needs to be done with 7k+ images which causes GPU Out Of Memory.
-* Pongs (tested v0, v4) first frame from env.reset() returns different frame (different colors) than env.step() therefor 'recording' starts only from 3rd frame
-* Currently works only with discrete action space
+- When batches are big 10k+ images which causes GPU run out of memory.
+- Pong-(v0, v4) first frame from `env.reset()` returns different frame (different colors) than `env.step()` therefor recording starts only from first `.step()` frame instead of `.reset()` frame.
+- Currently works only with discrete action space
 
 ## Motivation
 
@@ -88,11 +88,16 @@ Note that I have specific robotics use-cases in mind which I would like to repli
 
 Reinforcement Learning is approach which is changing the game ([Osaro](https://www.osaro.com/), [Vicarious](https://www.vicarious.com/)). Instead of jumping to latest and greatest I have decided to start with simplest and build my knowledge and experementation experience from here.
 
-[//]: # (Image References)
+## Debugging GCP
 
-[image1]: ./images/atari_game_performance.png "Atari game performance compare"
-[image2]: ./images/pong_pg_results.png "Pong Policy Gradient Results"
-[image3]: ./images/pong_pg_results_without_preprocessing.png "Pong Policy Gradient Results without Preprocessing"
+To quickly check if everything is working one can spin up Ubuntu 18.04 Docker image and follow these steps:
+
+1. Copy or clone repository.
+2. Build the package (install apt-get dependencies): `python3 setup.py build`
+3. Install package and dependencies: `python3 setup.py install`
+4. Run package: `python3 -m policy_gradient_robot_learning.main --gpu False`
+
+This is something what GCP does when you send the job to cloud. I used "[training-data-analyst](https://github.com/GoogleCloudPlatform/training-data-analyst/tree/master/blogs/rl-on-gcp/DQN_Breakout)" repository as an example.
 
 ## Atari game performance comparison between algorithms and Human
 
