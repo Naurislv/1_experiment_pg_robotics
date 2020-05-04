@@ -136,7 +136,7 @@ def learning(env_name, policy, batch_size, summary_writer):
             prev_reward = reward
 
         if done:  # When Game env say it's done - end of episode.
-            LOGGER.info("{%s} Episode done! Reward sum: %.2f , Frames: %d",
+            LOGGER.info("%s. Episode done! Reward sum: %.2f , Frames: %d",
                         data_holder.episode_number,
                         data_holder.rewards_episode.sum(),
                         data_holder.record_counter_episode)
