@@ -41,7 +41,7 @@ Insipred from :
 # Standard imports
 import logging
 import datetime
-from os.path import dirname, join, exists, abspath
+from os.path import dirname, join, abspath
 import time
 
 # Dependency imports
@@ -83,11 +83,12 @@ def setup_outputs():
     summary_writer = tf.summary.create_file_writer(train_log_dir)
 
     step_path = join(dir_path, f'{session_id}/{prefix}step.txt')
-    if exists(step_path):
-        with open(step_path, "r") as txt_file:
-            episode_number = int(txt_file.read())
 
+    try:
+        episode_number = int(tf.io.gfile.GFile(step_path).read())
         tf.summary.experimental.set_step(episode_number)
+    except tf.errors.NotFoundError:
+        pass
 
     chk_path = join(dir_path, f'{session_id}/model')
 
@@ -135,22 +136,26 @@ def learning(env_name, policy, batch_size, summary_writer):
             prev_reward = reward
 
         if done:  # When Game env say it's done - end of episode.
-            LOGGER.info("Episode done! Reward sum: %.2f , Frames: %d",
-                        data_holder.rewards_episode.sum(), data_holder.record_counter_episode)
+            LOGGER.info("{%s} Episode done! Reward sum: %.2f , Frames: %d",
+                        data_holder.episode_number,
+                        data_holder.rewards_episode.sum(),
+                        data_holder.record_counter_episode)
 
             observation = env.reset()
             prev_observation = None
             data_holder.next_episode()
 
             if data_holder.record_counter >= batch_size and not ARGS.test:
-                LOGGER.info("Update weights from %d frames", data_holder.record_counter)
+                LOGGER.info("Update weights from %d frames, average rewards: %.2f",
+                            data_holder.record_counter,
+                            data_holder.rewards.sum() / data_holder.episode_number_batch)
 
                 with summary_writer.as_default():
                     policy.train_step(
                         data_holder.observations,
                         np.vstack(data_holder.labels),
                         np.vstack(data_holder.rewards_discounted),
-                        step=tf.constant(data_holder.episode_number - 1, dtype=tf.int64)
+                        step=tf.constant(data_holder.episode_number, dtype=tf.int64)
                     )
 
                 data_holder.next_batch()
@@ -181,7 +186,7 @@ def main():
         # Stop learning save files
         if not ARGS.test:
             policy.save(chk_path)
-            with open(join(dirname(chk_path), 'step.txt'), "w") as txt_file:
+            with tf.io.gfile.GFile(join(dirname(chk_path), 'step.txt'), 'w') as txt_file:
                 txt_file.write(str(tf.summary.experimental.get_step()))
 
 

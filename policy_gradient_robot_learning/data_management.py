@@ -31,7 +31,8 @@ class DataManager:
         # Load the step from previous trainings
         self.episode_number = tf.summary.experimental.get_step()
         if not self.episode_number:
-            self.episode_number = 1
+            self.episode_number = 0
+            self.episode_number_batch = 0
 
         self.start_time = time.time()
         self.record_counter = 0
@@ -108,12 +109,16 @@ class DataManager:
 
     def next_batch(self):
         """Clear gathered data and prepare to for next episode."""
+        batch_reward = sum(self._rewards) / self.episode_number_batch
+        with self.summary_writer.as_default():
+            tf.summary.scalar('batch_reward', batch_reward, step=self.episode_number)
 
         self._labels = []
         self._rewards = []
         self._observations = []
         self.record_counter = 0
         self._last_record_count = 0
+        self.episode_number_batch = 0
         self.record_timestamp = None
 
     def next_episode(self):
@@ -127,6 +132,7 @@ class DataManager:
             tf.summary.scalar('number of records', episode_record_counter, step=self.episode_number)
 
         self.episode_number += 1
+        self.episode_number_batch += 1
         self._last_record_count = self.record_counter
 
         tf.summary.experimental.set_step(self.episode_number)

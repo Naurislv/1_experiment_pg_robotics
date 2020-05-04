@@ -6,13 +6,13 @@ BUCKET=robot_learning
 
 if [ "$IS_LOCAL" == "local" ]
 then
-    gcloud ml-engine local train \
+    gcloud ai-platform local train \
         --package-path=${PWD}/policy_gradient_robot_learning/learning \
         --module-name=policy_gradient_robot_learning.learning \
         --\
         --learning_rate=0.0001\
         --batch_size=13000\
-        --episodes=17000\
+        --episodes=3500\
         --output_dir='outputs'\
         --gpu=False
 else
@@ -29,7 +29,7 @@ else
         --model="NatureCNN" \
         --policy="PG" \
         --gpu=False \
-        --episodes=17000 \
+        --episodes=3500 \
         --output_dir="gs://$BUCKET/policy_gradient_robot_learning"
 fi
 
