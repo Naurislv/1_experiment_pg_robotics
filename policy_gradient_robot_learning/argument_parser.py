@@ -35,7 +35,7 @@ def user_args():
     parser.add_argument('--model', type=str, default='NatureCNN', help="Policy network name")
     parser.add_argument('--policy', type=str, default='PG', help="Policy algorithm name")
     parser.add_argument('--gpu', type=str2bool, default=True, help="Use GPU instead of CPU")
-    parser.add_argument('--seed', type=int, default=945,
+    parser.add_argument('--seed', type=int, default=111,
                         help="Set global seed for random generators (Tensorflow, Numpy, random)")
 
     args = parser.parse_args()

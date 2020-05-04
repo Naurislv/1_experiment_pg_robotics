@@ -62,6 +62,12 @@ For training I am using [GCP](https://cloud.google.com/) (Google Cloud Platform)
 
 ## Debugging GCP
 
+### Run GCP command locally
+
+Execute `bash run_gcloud local`
+
+### Debug package
+
 To quickly check if everything is working one can spin up Ubuntu 18.04 Docker image and follow these steps:
 
 1. Copy or clone repository.
