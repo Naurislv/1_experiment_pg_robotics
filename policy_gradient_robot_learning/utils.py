@@ -45,30 +45,6 @@ def pong_img_preproc(prev_img, img):
     return prev_img, policy_input
 
 
-# @tf.function(experimental_relax_shapes=True)
-# def _pong_img_preproc(prev_img, img):
-#     """Preprocess 210x160x3 uint8 frame for PingPong-v4 Gym Environment."""
-
-#     # downsample by factor of 2
-#     img = tf.image.resize(img, (img.shape[-3], img.shape[-2]))
-
-#     img[img == 17] = 0 # erase background (background type 1)
-#     img[img == 192] = 0 # erase background (background type 2)
-#     img[img == 136] = 0 # erase background (background type 3)
-#     img[img != 0] = 255 # everything else (paddles, ball) just set to 1
-#     img = img[17:96, :]
-
-#     # Insert motion in frame by subtracting previous frame from current
-#     if prev_img is not None:
-#         policy_input = tf.math.subtract(img, prev_img)
-#     else:
-#         policy_input = tf.zeros_like(img)
-
-#     prev_img = img
-
-#     return prev_img, policy_input
-
-
 def discount_rewards(reward_his, gamma=.99):
     """Returns discounted rewards
     Args:
