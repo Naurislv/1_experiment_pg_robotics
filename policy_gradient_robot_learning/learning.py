@@ -48,6 +48,9 @@ import time
 import gym
 import tensorflow as tf
 import numpy as np
+import cv2
+
+import image_based_robot_env  # pylint disable=unused-import
 
 # Local imports
 from policy_gradient import Policy
@@ -97,10 +100,15 @@ def setup_outputs():
 
 def make_env(name):
     """Create an environment."""
+    LOGGER.info("Initializing %s", name)
 
     env = gym.make(name)
-    observation = env.reset()
-    LOGGER.info("%s initialized", name)
+    env.reset()
+
+    if name == 'image-based-robot-env-v0':
+        env.render('rgb_array')
+
+    LOGGER.info('Actions: %s', env.unwrapped.get_action_meanings())
 
     for _ in range(1):
         observation, _, _, _ = env.step(0)
@@ -123,7 +131,6 @@ def learning(env_name, policy, batch_size, summary_writer):
 
         # preprocess the observation, set input to network to be difference image
         prev_observation, policy_input = pong_img_preproc(prev_observation, observation)
-
         action = policy.sample_action(policy_input, test=ARGS.test)[0]
 
         # step the environment and get new measurements
@@ -163,6 +170,8 @@ def learning(env_name, policy, batch_size, summary_writer):
                 data_holder.next_batch()
 
         if ARGS.test:
+            cv2.imshow('policy', policy_input)
+            cv2.waitKey(33)
             time.sleep(0.01)
 
         if data_holder.episode_number > ARGS.episodes:
